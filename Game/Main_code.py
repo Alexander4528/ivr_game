@@ -1027,11 +1027,11 @@ def upgrade():
                     upgrade_chars[j] += 1
                     player.HP += 1
                     player_points -= 1
-                elif j == 2 and player_points >= 3:
+                elif j == 2 and player_points >= 3 and not player.running_unlocked:
                     upgrade_chars[j] = True
                     player.running_unlocked = True
                     player_points -= 3
-                elif j == 3 and player_points >= 4:
+                elif j == 3 and player_points >= 4 and not player.double_jump_unlocked:
                     upgrade_chars[j] = True
                     player.double_jump_unlocked = True
                     player_points -= 4
