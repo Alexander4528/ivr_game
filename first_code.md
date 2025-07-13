@@ -1,4 +1,9 @@
-    
+1. Создана пустая папка проекта
+2. Реализован код для уровня
+3. Добавлены объекты и спрайты игрока и монстров(врагов)
+4. Реализованы функции сохранения игры и загрузки сохранения(сценарий 6)
+5. Реализован переход между первой и второй частью уровня
+6. Добавлены спрайты для анимации бега
 
 
     import pygame
@@ -17,7 +22,7 @@
     font_large = pygame.font.Font(font_path, 48)
     font_small = pygame.font.Font(font_path, 24)
     
-    ground_image: Surface = pygame.image.load('ground.jpg')
+    ground_image = pygame.image.load('ground.jpg')
     ground_image = pygame.transform.scale(ground_image, (804, 60))
     GROUND_H = ground_image.get_height()
     
@@ -27,6 +32,7 @@
     portal_image = pygame.image.load('p2.gif')  # Замените на изображение флага
     portal_image = pygame.transform.scale(portal_image, (80, 90))  # Подберите подходящий размер флага
     
+    #Сохраение и загрузка игры
     def save_game(play):
         game_state = {
             'player_pos': (play.rect.x, play.rect.y),
@@ -43,7 +49,8 @@
         except (FileNotFoundError, json.JSONDecodeError):
             play.rect.midbottom = (W - 700, H - GROUND_H - 50)
             return play.rect.midbottom
-    
+
+    #Характеристики игрока
     class Player:
     
         def __init__(self):
@@ -305,7 +312,7 @@
                     elif self.rect.right > W:
                         self.rect.right = W
     
-    
+            #Класс врагов
             class Monster(Entity):
                 def __init__(self):
                     super().__init__(monster_image)
