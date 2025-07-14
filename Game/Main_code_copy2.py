@@ -73,6 +73,10 @@ level_1_part_1_music = "Music/Смешарики - Погоня.mp3"
 level_2_part_1_music = "Music/Geometry_Dash_-_Geometrical_Dominator_67148396.mp3"
 Unlock_skin_sound = pygame.mixer.Sound("Sounds/mixkit-unlock-new-item-game-notification-254.wav")
 
+unlock_message = None
+unlock_message_time = 0
+UNLOCK_MESSAGE_DURATION = 3000  # Время отображения в миллисекундах
+
 # Скины
 skins = [
     {
@@ -1081,7 +1085,8 @@ def level_menu():
 
 
 def upgrade():
-    global music_playing, from_menu, from_level, player_points, player
+    global music_playing, from_menu, from_level, player_points, player, unlock_message, \
+        unlock_message_time
     load_upgrades(player)
     # Создаем прямоугольники для кликабельных областей уровней
     pluses = []
@@ -1203,11 +1208,15 @@ def upgrade():
                     player_points -= 1
                 elif j == 2 and player_points >= 3 and not player.running_unlocked:
                     Unlock_skin_sound.play()
+                    unlock_message = "Открылся скин: Соник"
+                    unlock_message_time = pygame.time.get_ticks()
                     upgrade_chars[j] = True
                     player.running_unlocked = True
                     player_points -= 3
                 elif j == 3 and player_points >= 4 and not player.double_jump_unlocked:
                     Unlock_skin_sound.play()
+                    unlock_message = "Открылся скин: Марио"
+                    unlock_message_time = pygame.time.get_ticks()
                     upgrade_chars[j] = True
                     player.double_jump_unlocked = True
                     player_points -= 4
@@ -1230,6 +1239,30 @@ def upgrade():
                     player_points += 3
                 save_upgrades(player)
                 load_upgrades(player)
+
+        if unlock_message:
+            current_time = pygame.time.get_ticks()
+            if current_time - unlock_message_time < UNLOCK_MESSAGE_DURATION:
+                # Нарисовать прямоугольник с текстом
+                message_surface = pygame.Surface((400, 50))
+                message_surface.fill((255, 255, 255))
+                pygame.draw.rect(message_surface, (0, 0, 0), message_surface.get_rect(), 2)
+                # Отрисовка текста
+                draw_text(
+                    unlock_message,
+                    font_small,
+                    (0, 0, 0),
+                    message_surface,
+                    200,
+                    25
+                )
+                # Разместить поверх экрана по центру
+                screen.blit(
+                    message_surface,
+                    (W // 2 - 200, H // 2 - 25)
+                )
+            else:
+                unlock_message = None  # Сбросить сообщение после времени
 
         # Кнопка "Назад"
         back_hovered = back_rect.collidepoint(mouse_pos)
