@@ -1,11 +1,66 @@
 # Импорт необходимых библиотек
 import pygame
+import sqlite3
 import sys
 import random
-import json
 from pygame import Surface
 
 pygame.init()
+
+# Подготовка таблицы с сохранениями
+def init_db():
+    conn = sqlite3.connect('Save_files/savegame.db')
+    cursor = conn.cursor()
+    # Таблица для настроек
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS settings (
+            id INTEGER PRIMARY KEY,
+            music_on INTEGER,
+            sound_on INTEGER,
+            player_points INTEGER,
+            difficulty_level INTEGER
+        )
+    ''')
+    # Таблица для прогресса
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS game_progress (
+            id INTEGER PRIMARY KEY,
+            player_pos INTEGER,
+            score INTEGER,
+            HP INTEGER,
+            shield INTEGER
+        )
+    ''')
+    # Таблица для скинов
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS skins (
+            id INTEGER PRIMARY KEY,
+            current_skin_index INTEGER
+        )
+    ''')
+    # Таблица для улучшений
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS upgrades (
+            id INTEGER PRIMARY KEY,
+            player_points INTEGER,
+            attack INTEGER,
+            HP INTEGER,
+            running_unlocked INTEGER,
+            double_jump_unlocked INTEGER,
+            shield INTEGER
+        )
+    ''')
+    cursor.execute('''
+            CREATE TABLE IF NOT EXISTS levels(
+                id INTEGER PRIMARY KEY,
+                level_number INTEGER,
+                cleared INTEGER
+            )
+    ''')
+    conn.commit()
+    return conn
+
+saving = init_db()
 
 # Настройки игры
 font_path = "caviar-dreams.ttf"
@@ -14,7 +69,10 @@ font_medium = pygame.font.Font(font_path, 36)
 font_small = pygame.font.Font(font_path, 24)
 player_points = 0
 difficulty_level = 0
+dark_mode = False
+background_color = (62, 118, 222) if dark_mode else (92, 148, 252)
 
+# Игровые переменные
 monsters = []
 last_spawn_time = 0
 spawn_delay = 3000
@@ -26,10 +84,15 @@ level_1_part_1_in = False
 level_2_part_1_in = False
 levels_in = False
 
+# Переменные меню
 playing_menu = True
 playing_level = False
 from_menu = False
 from_level = False
+menu_move_up = False
+menu_move_down = False
+menu_last_move_time = 0
+MENU_MOVE_DELAY = 300
 
 # Переменные для скроллинга
 level_1_part_1_WIDTH = 5000
@@ -48,34 +111,32 @@ ground_image: Surface = pygame.image.load(
 )
 ground_image = pygame.transform.scale(ground_image, (W, 60))
 GROUND_H = ground_image.get_height()
-
 me_image = pygame.image.load("Sprites and objects/Skins/Me/Me.png")
 me_image = pygame.transform.scale(me_image, (70, 80))
-
 portal_image = pygame.image.load(
     "Sprites and objects/Objects, background and other/p2.gif"
 )
 portal_image = pygame.transform.scale(portal_image, (80, 90))
-
 me_damaged_image = pygame.image.load("Sprites and objects/Skins/Me/Me_damaged.png")
 me_damaged_image = pygame.transform.scale(me_damaged_image, (70, 80))
-
-# Переменные для меню
-menu_move_up = False
-menu_move_down = False
-menu_last_move_time = 0
-MENU_MOVE_DELAY = 300
 
 # Переключение музыки
 music_on = True
 menu_music = "Music/Carmen_Twillie_The_Lion_King_-_Circle_Of_Life_48727462.mp3"
 level_1_part_1_music = "Music/Смешарики - Погоня.mp3"
 level_2_part_1_music = "Music/Geometry_Dash_-_Geometrical_Dominator_67148396.mp3"
+
+# Переключение звука
+sound_on = True
 Unlock_skin_sound = pygame.mixer.Sound("Sounds/mixkit-unlock-new-item-game-notification-254.wav")
 
+# Переменные сообщения об открытии нового скина / улучшения навыка
 unlock_message = None
 unlock_message_time = 0
 UNLOCK_MESSAGE_DURATION = 3000  # Время отображения в миллисекундах
+
+level1_cleared = False
+level2_cleared = False
 
 # Скины
 skins = [
@@ -185,6 +246,7 @@ for i in range(1, 5):
     except:
         running_sprites_left.append(pygame.Surface((70, 80)))
 
+# Переменные текущего скина
 current_skin_index = 0
 skin_message_timer = 0
 
@@ -199,10 +261,8 @@ for skin_number in skins:
 # Загрузка скина
 def apply_skin(skin_index):
     global me_image, running_sprites_right, running_sprites_left, me_damaged_image
-
     if skin_index < 0 or skin_index >= len(skins):
         skin_index = 0  # Защита от неверного индекса
-
     skin = skins[skin_index]
     try:
         # Загружаем основное изображение
@@ -216,7 +276,6 @@ def apply_skin(skin_index):
             ]
         else:
             running_sprites_right = [me_image] * 4
-
         if skin.get("walk_left", []):
             running_sprites_left = [
                 pygame.transform.scale(pygame.image.load(fname), (70, 80))
@@ -237,114 +296,94 @@ def apply_skin(skin_index):
             apply_skin(0)
 
 
-# сохранение скина
-def save_skin(filename="Save_files/Skin_selected.json"):
-    global current_skin_index
-    current_skin = {
-        "current_skin_index": current_skin_index,
-    }
-    with open(filename, "w") as f:
-        json_str = json.dumps(current_skin)
-        f.write(json_str)
-
-
-# Сохранение прогресса
-def save_game(play, current_score=None, filename="Save_files/last.json"):
-    global level_1_part_1_scroll_pos
-    game_state = {
-        "player_pos": level_1_part_1_scroll_pos,
-        "difficulty level": difficulty_level,
-    }
-    if current_score is not None:
-        game_state["score"] = current_score
-        game_state["HP"] = play.HP
-    with open(filename, "w") as f:
-        json_str = json.dumps(game_state)
-        f.write(json_str)
-
-
 # Сохранение настроек
-def save_settings(filename="Save_files/settings.json"):
-    current_settings = {
-        "music_on": music_on,
-        "player_points": player_points,
-        "difficulty_level": difficulty_level,
-    }
-    with open(filename, "w") as f:
-        json_str = json.dumps(current_settings)
-        f.write(json_str)
-
-
-# Сохранение характеристик
-def save_upgrades(play, filename="Save_files/upgrades.json"):
-    current_char_stats = {
-        "player_points": player_points,
-        "Attack": play.attack,
-        "HP": play.HP,
-        "Running": play.running_unlocked,
-        "Double jump": play.double_jump_unlocked,
-        "Shield": play.shield,
-    }
-    with open(filename, "w") as f:
-        json_str = json.dumps(current_char_stats)
-        f.write(json_str)
-
-
-# Загрузка последнего сохранения
-def load_game(play, filename="Save_files/last.json"):
-    global current_skin_index, level_1_part_1_scroll_pos
-
-    try:
-        with open(filename, "r") as f:
-            game_state = json.load(f)
-            level_1_part_1_scroll_pos = game_state["player_pos"]
-
-            if "HP" in game_state:
-                play.HP = game_state["HP"]
-            return game_state.get("score", 0), game_state.get("player_pos", 0)
-    except (FileNotFoundError, json.JSONDecodeError):
-        level_1_part_1_scroll_pos = 0
-        return 0, level_1_part_1_scroll_pos
-
+def save_settings_sql():
+    global music_on, sound_on, player_points, difficulty_level
+    cursor = saving.cursor()
+    cursor.execute('DELETE FROM settings')
+    cursor.execute('INSERT INTO settings (music_on, sound_on, player_points, difficulty_level) VALUES (?, ?, ?, ?)',
+                   (int(music_on), int(sound_on), player_points, difficulty_level))
+    saving.commit()
 
 # Загрузка настроек
-def load_settings():
-    global music_on, player_points, difficulty_level
-    try:
-        with open("Save_files/settings.json", "r") as f:
-            current_settings = json.load(f)
-            music_on = current_settings.get("music_on", True)
-            player_points = current_settings.get("player_points", 0)
-            difficulty_level = current_settings.get("difficulty_level", 0)
-    except (FileNotFoundError, json.JSONDecodeError):
-        pass
+def load_settings_sql():
+    global music_on, sound_on, player_points, difficulty_level
+    cursor = saving.cursor()
+    cursor.execute('SELECT music_on, sound_on, player_points, difficulty_level FROM settings LIMIT 1')
+    row = cursor.fetchone()
+    if row:
+        music_on = bool(row[0])
+        sound_on = bool(row[1])
+        player_points = row[2]
+        difficulty_level = row[3]
 
+# Сохранение игры
+def save_game_sql():
+    global level_1_part_1_scroll_pos, score, player
+    cursor = saving.cursor()
+    cursor.execute('DELETE FROM game_progress')
+    cursor.execute('INSERT INTO game_progress (player_pos, score, HP, shield) VALUES (?, ?, ?, ?)',
+                   (level_1_part_1_scroll_pos, score, player.HP, player.shield))
+    saving.commit()
 
+# Загрузка последнего сохранения
+def load_game_sql():
+    global level_1_part_1_scroll_pos, score, player
+    cursor = saving.cursor()
+    cursor.execute('SELECT player_pos, score, HP, shield FROM game_progress LIMIT 1')
+    row = cursor.fetchone()
+    if row:
+        level_1_part_1_scroll_pos = row[0]
+        score = row[1]
+        player.HP = row[2]
+        player.shield = row[3]
+    else:
+        level_1_part_1_scroll_pos = 0
+        score = 0
+
+# Сохранение скина
+def save_skin():
+    global current_skin_index
+    cursor = saving.cursor()
+    cursor.execute('DELETE FROM skins')
+    cursor.execute('INSERT INTO skins (current_skin_index) VALUES (?)', (current_skin_index,))
+    saving.commit()
+
+# Загрузка скина
 def load_skin():
     global current_skin_index
-    try:
-        with open("Save_files/Skin_selected.json", "r") as f:
-            current_skin = json.load(f)
-            current_skin_index = current_skin.get("current_skin_index", 0)
-    except (FileNotFoundError, json.JSONDecodeError):
-        pass
+    cursor = saving.cursor()
+    cursor.execute('SELECT current_skin_index FROM skins LIMIT 1')
+    row = cursor.fetchone()
+    if row:
+        current_skin_index = row[0]
+    else:
+        current_skin_index = 0
 
+# Сохранение улучшении
+def save_upgrades():
+    global player_points, player
+    cursor = saving.cursor()
+    cursor.execute('DELETE FROM upgrades')
+    cursor.execute(
+        'INSERT INTO upgrades (player_points, attack, HP, running_unlocked, double_jump_unlocked, shield) VALUES (?, ?, ?, ?, ?, ?)',
+        (player_points, player.attack, player.HP, int(player.running_unlocked), int(player.double_jump_unlocked), player.shield)
+    )
+    saving.commit()
 
 # Загрузка улучшении
-def load_upgrades(play):
-    global player_points
-    try:
-        with open("Save_files/upgrades.json", "r") as f:
-            current_upgrades = json.load(f)
-            player_points = current_upgrades.get("player_points", 0)
-            play.attack = current_upgrades.get("Attack", 1)
-            play.HP = current_upgrades.get("HP", 3)
-            play.running_unlocked = current_upgrades.get("Running", False)
-            play.double_jump_unlocked = current_upgrades.get("Double jump", False)
-            play.shield = current_upgrades.get("Shield", 0)
-    except (FileNotFoundError, json.JSONDecodeError):
-        pass
-
+def load_upgrades():
+    global player_points, player
+    cursor = saving.cursor()
+    cursor.execute('SELECT player_points, attack, HP, running_unlocked, double_jump_unlocked, shield FROM upgrades LIMIT 1')
+    row = cursor.fetchone()
+    if row:
+        player_points = row[0]
+        player.attack = row[1]
+        player.HP = row[2]
+        player.running_unlocked = bool(row[3])
+        player.double_jump_unlocked = bool(row[4])
+        player.shield = row[5]
 
 # Текст
 def draw_text(text, font, color, surface, x, y):
@@ -352,6 +391,7 @@ def draw_text(text, font, color, surface, x, y):
     rect = text_obj.get_rect(center=(x, y))
     surface.blit(text_obj, rect)
 
+# Музыка меню
 def play_menu_music():
     global music_playing, music_on, playing_menu
     if not music_playing and music_on and playing_menu:
@@ -364,7 +404,7 @@ def play_menu_music():
         except Exception as e:
             print(f"Ошибка воспроизведения меню: {e}")
 
-
+#Музыка уровня
 def play_level_music():
     global music_playing, music_on, playing_level, level_1_part_1_in, level_2_part_1_in
     if not music_playing and music_on and playing_level:
@@ -380,13 +420,13 @@ def play_level_music():
         except Exception as e:
             print(f"Ошибка воспроизведения уровня: {e}")
 
-
+# Остановка музыки
 def stop_music():
     global music_playing
     pygame.mixer.music.stop()
     music_playing = False
 
-
+# Переключение музыки
 def toggle_music():
     global music_on
     music_on = not music_on
@@ -394,17 +434,23 @@ def toggle_music():
         pygame.mixer.music.unpause()
     else:
         pygame.mixer.music.pause()
-    save_settings()
+    save_settings_sql()
 
+# Переключение звука
+def toggle_sound():
+    global sound_on
+    sound_on = not sound_on
+    save_settings_sql()
 
 # Пауза
 def pause():
     global music_on, playing_menu, from_level, from_menu, score, level_1_part_1_in, level_2_part_1_in
-    load_settings()
+    load_settings_sql()
     options_pause_rects = [
         pygame.Rect(W // 2 - 100, H // 2, 200, 40),
         pygame.Rect(W // 2 - 100, H // 2 + 50, 200, 40),
         pygame.Rect(W // 2 - 100, H // 2 + 100, 200, 40),
+        pygame.Rect(W // 2 - 100, H // 2 + 150, 200, 40),
     ]
     paused = True
     overlay = pygame.Surface((W, H), pygame.SRCALPHA)
@@ -430,8 +476,10 @@ def pause():
                             elif music_on:
                                 toggle_music()
                         elif idx == 1:
-                            management_menu()
+                            toggle_sound()
                         elif idx == 2:
+                            management_menu()
+                        elif idx == 3:
                             playing_menu = True
                             from_level = True
                             from_menu = False
@@ -448,7 +496,7 @@ def pause():
         draw_text("ПАУЗА", font_large, (255, 255, 255), screen, W // 2, H // 4)
 
         # Получаем текущие цвета пунктов меню
-        for j, opt in enumerate(["Музыка", "Управление", "Назад"]):
+        for j, opt in enumerate(["Музыка", "Звук", "Управление", "Назад"]):
             rect = options_pause_rects[j]
             if rect.collidepoint(mouse_pos):
                 color = (255, 255, 255)  # выделение при наведении
@@ -458,6 +506,9 @@ def pause():
             if j == 0:
                 status = "Вкл" if music_on else "Выкл"
                 text = f"{opt}: {status}"
+            elif j == 1:
+                status2 = "Вкл" if sound_on else "Выкл"
+                text = f"{opt}: {status2}"
             else:
                 text = opt
             draw_text(text, font_small, color, screen, W // 2, H // 2 + j * 50)
@@ -611,7 +662,6 @@ class Player:
         self.y_speed = -15  # Сильный прыжок вверх
         self.falling_through = False
 
-
 # Характеристика и функции врагов
 class Monster:
     def __init__(self):
@@ -685,13 +735,13 @@ class Monster:
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
-
+# Активация игрока
 player = Player()
 
 # Главное меню
 def main_menu():
-    global player, menu, levels_in, from_menu, from_level, current_skin_index
-    load_settings()
+    global player, menu, levels_in, from_menu, from_level, current_skin_index, background_color
+    load_settings_sql()
     menu = True
     options_rects = [
         pygame.Rect(W // 2 - 100, H // 2 - 100, 200, 40),  # "Начать игру"
@@ -701,8 +751,7 @@ def main_menu():
         pygame.Rect(W // 2 - 100, H // 2 + 100, 200, 40),  # "Секреты"
         pygame.Rect(W // 2 - 100, H // 2 + 150, 200, 40),  # "Выход"
     ]
-    temp_player = Player()
-    load_game(temp_player)
+    load_game_sql()
     load_skin()
     apply_skin(current_skin_index)
     player = Player()
@@ -710,7 +759,7 @@ def main_menu():
     while menu:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                save_settings()
+                save_settings_sql()
                 pygame.quit()
                 sys.exit()
             elif (
@@ -738,7 +787,7 @@ def main_menu():
 
         mouse_pos = pygame.mouse.get_pos()
 
-        screen.fill((92, 148, 252))
+        screen.fill(background_color)
         draw_text("Главное меню", font_large, (255, 255, 255), screen, W // 2, H // 4)
         options = [
             "Начать игру",
@@ -761,7 +810,7 @@ def main_menu():
 
 # Меню со скинами
 def skin_menu():
-    global current_skin_index, me_image, running_sprites_right, running_sprites_left, skin_message_timer
+    global current_skin_index, me_image, running_sprites_right, running_sprites_left, background_color
 
     in_skin_menu = True
     for skin in skins:
@@ -775,7 +824,7 @@ def skin_menu():
     skin_rects = []
     for idx in range(len(skins)):
         skin_rects.append(pygame.Rect(W // 2 - 150, H // 4 + idx * 60 - 20, 300, 40))
-    load_upgrades(player)
+    load_upgrades()
     load_skin()
     # Прямоугольник для кнопки "Назад"
     back_rect = pygame.Rect(W // 2 - 50, H - 70, 100, 40)
@@ -790,7 +839,7 @@ def skin_menu():
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mouse_clicked = True
 
-        screen.fill((92, 148, 252))
+        screen.fill(background_color)
         draw_text(
             "Выбор скина", font_large, (255, 255, 255), screen, W // 2, H // 6 - 40
         )
@@ -828,7 +877,7 @@ def skin_menu():
                 player.idle_sprite = me_image
                 player.image = player.idle_sprite
                 player.damaged_sprite = me_damaged_image
-                save_game(player)
+                save_game_sql()
                 save_skin()
 
             if is_hovered and not skin["unlocked"]:
@@ -854,11 +903,14 @@ def skin_menu():
 
 
 def settings():
-    global music_on, player_points, difficulty_level
-    load_upgrades(player)
+    global music_on, sound_on, player_points, difficulty_level, level1_cleared, level2_cleared, dark_mode, \
+        background_color
+    load_upgrades()
     options_settings = [
         "Уровень сложности",
         "Музыка",
+        "Звук",
+        "Режим",
         "Сброс прогресса",
         "Сохранить настройки",
         "Отменить",
@@ -866,13 +918,15 @@ def settings():
         "Главное меню",
     ]
     options_settings_rects = [
-        pygame.Rect(W // 2 - 100, H // 3, 200, 40),  # "Уровень сложности"
-        pygame.Rect(W // 2 - 100, H // 3 + 50, 200, 40),  # "Музыка"
-        pygame.Rect(W // 2 - 100, H // 3 + 100, 200, 40),  # "Сброс прогресса"
-        pygame.Rect(W // 2 - 100, H // 3 + 150, 200, 40),  # "Сохранить настройки"
-        pygame.Rect(W // 2 - 100, H // 3 + 200, 200, 40),  # "Отменить"
-        pygame.Rect(W // 2 - 100, H // 3 + 250, 200, 40),  # "Управление"
-        pygame.Rect(W // 2 - 100, H // 3 + 300, 200, 40),  # "Главное меню"
+        pygame.Rect(W // 2 - 100, H // 3 - 50, 200, 40),  # "Уровень сложности"
+        pygame.Rect(W // 2 - 100, H // 3, 200, 40),  # "Музыка"
+        pygame.Rect(W // 2 - 100, H // 3 + 50, 200, 40), # "Звук"
+        pygame.Rect(W // 2 - 100, H // 3 + 100, 200, 40), # "Режим"
+        pygame.Rect(W // 2 - 100, H // 3 + 150, 200, 40), # "Сброс прогресса"
+        pygame.Rect(W // 2 - 100, H // 3 + 200, 200, 40), # "Сохранить настройки"
+        pygame.Rect(W // 2 - 100, H // 3 + 250, 200, 40), # "Отменить"
+        pygame.Rect(W // 2 - 100, H // 3 + 300, 200, 40), # "Управление"
+        pygame.Rect(W // 2 - 100, H // 3 + 350, 200, 40)  # "Главное меню"
     ]
     # Объявляем переменные один раз перед циклом
     temp_points = player_points
@@ -897,35 +951,51 @@ def settings():
                             if music_on:
                                 play_menu_music()
                         elif selected_idx == 2:
-                            with open("Save_files/last.json", "w"):
-                                pass
-                            with open("Save_files/upgrades.json", "w"):
-                                pass
-                            with open("Save_files/settings.json", "w"):
-                                pass
-                            player_points = 0
+                            toggle_sound()
                         elif selected_idx == 3:
+                            dark_mode = not dark_mode
+                            background_color = (62, 118, 222) if dark_mode else (92, 148, 252)
+                        elif selected_idx == 4:
+                            cursor = saving.cursor()
+                            cursor.execute('DELETE FROM game_progress')
+                            cursor.execute('DELETE FROM settings')
+                            cursor.execute('DELETE FROM upgrades')
+                            cursor.execute('DELETE FROM skins')
+                            cursor.execute('DELETE FROM levels')
+                            saving.commit()
+                            level1_cleared = False
+                            level2_cleared = False
+                            player_points = 0
+                        elif selected_idx == 5:
                             player_points = temp_points
                             difficulty_level = temp_difficulty
-                            save_settings()
-                            save_game(player, score)
+                            save_settings_sql()
+                            save_game_sql()
                             save_skin()
                             if music_on:
                                 pygame.mixer.music.unpause()
                             else:
                                 pygame.mixer.music.pause()
-                        elif selected_idx == 4:
-                            temp_difficulty = 0
-                            save_settings()
-                            save_game(player, score)
-                            save_skin()
-                        elif selected_idx == 5:
-                            management_menu()
                         elif selected_idx == 6:
+                            temp_difficulty = 0
+                            save_settings_sql()
+                            save_game_sql()
+                            dark_mode = False
+                            background_color = (62, 118, 222) if dark_mode else (92, 148, 252)
+                            if not music_on:
+                                toggle_music()
+                                if music_on:
+                                    play_menu_music()
+                            if not sound_on:
+                                toggle_sound()
+                            save_skin()
+                        elif selected_idx == 7:
+                            management_menu()
+                        elif selected_idx == 8:
                             main_menu()
         mouse_pos = pygame.mouse.get_pos()
         # Отрисовка
-        screen.fill((92, 148, 252))
+        screen.fill(background_color)
         draw_text("Настройки", font_large, (255, 255, 255), screen, W // 2, H // 6)
         for idx, opt in enumerate(options_settings):
             rect = options_settings_rects[idx]
@@ -941,16 +1011,36 @@ def settings():
                     color,
                     screen,
                     W // 2,
-                    H // 3 + idx * 50,
+                    H // 3 + (idx - 1) * 50,
+                )
+            elif options_settings[idx] == "Звук":
+                status2 = "Вкл" if sound_on else "Выкл"
+                draw_text(
+                    f"Звук: {status2}",
+                    font_small,
+                    color,
+                    screen,
+                    W // 2,
+                    H // 3 + (idx - 1) * 50,
+                )
+            elif options_settings[idx] == "Режим":
+                status3 = "Тёмный" if dark_mode else "Светлый"
+                draw_text(
+                    f"Режим: {status3}",
+                    font_small,
+                    color,
+                    screen,
+                    W // 2,
+                    H // 3 + (idx - 1) * 50,
                 )
             elif options_settings[idx] == "Уровень сложности":
                 levels = ["Легко", "Средне", "Сложно"]
                 level_text = f"Уровень сложности: {levels[temp_difficulty]}"
                 draw_text(
-                    level_text, font_small, color, screen, W // 2, H // 3 + idx * 50
+                    level_text, font_small, color, screen, W // 2, H // 3 + (idx - 1) * 50
                 )
             else:
-                draw_text(opt, font_small, color, screen, W // 2, H // 3 + idx * 50)
+                draw_text(opt, font_small, color, screen, W // 2, H // 3 + (idx - 1) * 50)
 
         # Кол-во очков
         draw_text(
@@ -963,6 +1053,7 @@ def settings():
 
 # Внутренний менеджер управления
 def management_menu():
+    global background_color
     rect_exit = pygame.Rect(W // 2 - 100, H - 70, 200, 40)
     # Можно реализовать список клавиш
     while True:
@@ -976,7 +1067,7 @@ def management_menu():
                     return
 
         mouse_pos = pygame.mouse.get_pos()
-        screen.fill((92, 148, 252))
+        screen.fill(background_color)
         draw_text(
             "Управление", font_large, (255, 255, 255), screen, W // 2, H // 3 - 80
         )
@@ -1005,7 +1096,12 @@ def secrets():
 
 # Выбор уровней
 def level_menu():
-    global levels_in, music_playing, from_menu, from_level
+    global levels_in, music_playing, from_menu, from_level, level1_cleared, level2_cleared, background_color
+    cursor = saving.cursor()
+    row1 = cursor.execute('SELECT cleared FROM levels WHERE level_number = 1 LIMIT 1').fetchone()
+    row2 = cursor.execute('SELECT cleared FROM levels WHERE level_number = 2 LIMIT 1').fetchone()
+    level1_cleared = bool(row1[0]) if row1 else False
+    level2_cleared = bool(row2[0]) if row2 else False
     load_skin()
     # Создаем прямоугольники для кликабельных областей уровней
     level_rects = []
@@ -1048,7 +1144,7 @@ def level_menu():
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mouse_clicked = True
 
-        screen.fill((92, 148, 252))
+        screen.fill(background_color)
         draw_text("Выбор уровня", font_large, (255, 255, 255), screen, W // 2, H // 6)
 
         # Отрисовка уровней и обработка кликов
@@ -1060,12 +1156,16 @@ def level_menu():
                 if j < 3
                 else (W // 2 if (3 <= j < 6) else W // 3 * 2 + 100)
             )
+            if level1_cleared and j == 0 :
+                color = (255, 255, 255) if is_hovered else (0, 255, 0)
+            if level2_cleared and j == 1:
+                color = (255, 255, 255) if is_hovered else (0, 255, 0)
             draw_text(opt, font_small, color, screen, x_pos, H // 3 + 20 + (j % 3) * 70)
 
             if is_hovered and mouse_clicked:
                 if j == 0:
                     level_1_part_1()
-                elif j == 1:
+                elif j == 1 and level1_cleared:
                     level_2_part_1()
                 elif j == 2:
                     pygame.quit()
@@ -1086,8 +1186,8 @@ def level_menu():
 
 def upgrade():
     global music_playing, from_menu, from_level, player_points, player, unlock_message, \
-        unlock_message_time
-    load_upgrades(player)
+        unlock_message_time, background_color
+    load_upgrades()
     # Создаем прямоугольники для кликабельных областей уровней
     pluses = []
     minuses = []
@@ -1123,7 +1223,7 @@ def upgrade():
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mouse_clicked = True
 
-        screen.fill((92, 148, 252))
+        screen.fill(background_color)
         draw_text("Улучшение", font_large, (255, 255, 255), screen, W // 2, H // 6)
 
         # Отрисовка уровней и обработка кликов
@@ -1198,47 +1298,81 @@ def upgrade():
                 )
 
             if is_hovered_pluses and mouse_clicked:
-                if j == 0 and player_points >= 1:
-                    upgrade_chars[j] += 1
-                    player.attack += 1
-                    player_points -= 1
-                elif j == 1 and player_points >= 1:
-                    upgrade_chars[j] += 1
-                    player.HP += 1
-                    player_points -= 1
-                elif j == 2 and player_points >= 3 and not player.running_unlocked:
-                    Unlock_skin_sound.play()
-                    unlock_message = "Открылся скин: Соник"
-                    unlock_message_time = pygame.time.get_ticks()
-                    upgrade_chars[j] = True
-                    player.running_unlocked = True
-                    player_points -= 3
-                elif j == 3 and player_points >= 4 and not player.double_jump_unlocked:
-                    Unlock_skin_sound.play()
-                    unlock_message = "Открылся скин: Марио"
-                    unlock_message_time = pygame.time.get_ticks()
-                    upgrade_chars[j] = True
-                    player.double_jump_unlocked = True
-                    player_points -= 4
-                elif j == 4 and player_points >= 3:
-                    upgrade_chars[j] += 1
-                    player.shield += 1
-                    player_points -= 3
-                save_upgrades(player)
+                if j == 0:
+                    if player_points >= 1:
+                        if sound_on:
+                            Unlock_skin_sound.play()
+                        upgrade_chars[j] += 1
+                        player.attack += 1
+                        player_points -= 1
+                    elif player_points < 1:
+                        unlock_message = "Недостаточно очков"
+                        unlock_message_time = pygame.time.get_ticks()
+                elif j == 1:
+                    if player_points >= 1:
+                        if sound_on:
+                            Unlock_skin_sound.play()
+                        upgrade_chars[j] += 1
+                        player.HP += 1
+                        player_points -= 1
+                    elif player_points < 1:
+                        unlock_message = "Недостаточно очков"
+                        unlock_message_time = pygame.time.get_ticks()
+                elif j == 2 and not player.running_unlocked:
+                    if player_points >= 3:
+                        if sound_on:
+                            Unlock_skin_sound.play()
+                        unlock_message = "Открылся скин: Соник"
+                        unlock_message_time = pygame.time.get_ticks()
+                        upgrade_chars[j] = True
+                        player.running_unlocked = True
+                        player_points -= 3
+                    elif player_points < 3:
+                        unlock_message = "Недостаточно очков"
+                        unlock_message_time = pygame.time.get_ticks()
+                elif j == 3 and not player.double_jump_unlocked:
+                    if player_points >= 4:
+                        if sound_on:
+                            Unlock_skin_sound.play()
+                        unlock_message = "Открылся скин: Марио"
+                        unlock_message_time = pygame.time.get_ticks()
+                        upgrade_chars[j] = True
+                        player.double_jump_unlocked = True
+                        player_points -= 4
+                    elif player_points < 4:
+                        unlock_message = "Недостаточно очков"
+                        unlock_message_time = pygame.time.get_ticks()
+                elif j == 4:
+                    if player_points >= 3:
+                        if sound_on:
+                            Unlock_skin_sound.play()
+                        upgrade_chars[j] += 1
+                        player.shield += 1
+                        player_points -= 3
+                    elif player_points < 3:
+                        unlock_message = "Недостаточно очков"
+                        unlock_message_time = pygame.time.get_ticks()
+                save_upgrades()
             if is_hovered_minuses and mouse_clicked and j != 2 and j != 3:
                 if j == 0 and upgrade_chars[j] > 1:
+                    if sound_on:
+                        Unlock_skin_sound.play()
                     upgrade_chars[j] -= 1
                     player.attack -= 1
                     player_points += 1
                 elif j == 1 and upgrade_chars[j] > 3:
+                    if sound_on:
+                        Unlock_skin_sound.play()
                     upgrade_chars[j] -= 1
                     player_points += 1
                     player.HP -= 1
                 elif j == 4 and upgrade_chars[j] >= 1:
+                    if sound_on:
+                        Unlock_skin_sound.play()
                     upgrade_chars[j] -= 1
                     player_points += 3
-                save_upgrades(player)
-                load_upgrades(player)
+                save_upgrades()
+                load_upgrades()
 
         if unlock_message:
             current_time = pygame.time.get_ticks()
@@ -1248,14 +1382,7 @@ def upgrade():
                 message_surface.fill((255, 255, 255))
                 pygame.draw.rect(message_surface, (0, 0, 0), message_surface.get_rect(), 2)
                 # Отрисовка текста
-                draw_text(
-                    unlock_message,
-                    font_small,
-                    (0, 0, 0),
-                    message_surface,
-                    200,
-                    25
-                )
+                draw_text(unlock_message,font_small,(0, 0, 0),message_surface,200,25)
                 # Разместить поверх экрана по центру
                 screen.blit(
                     message_surface,
@@ -1270,7 +1397,7 @@ def upgrade():
         draw_text("Главное меню", font_small, back_color, screen, W // 2, H - 50)
 
         if back_hovered and mouse_clicked:
-            save_upgrades(player)
+            save_upgrades()
             main_menu()
             upgrading = False
         draw_text(
@@ -1299,15 +1426,14 @@ def level_1_part_1():
     playing_level = True
     stop_music()
     play_level_music()
-    load_upgrades(player)
+    load_upgrades()
     # Создаем большую поверхность для уровня
     level_surface = pygame.Surface((level_1_part_1_WIDTH, H))
     level_surface.fill((92, 148, 252))  # Основной фон
-    score, level_1_part_1_scroll_pos = load_game(player)
+    load_game_sql()
     # Рисуем землю
     for x in range(0, level_1_part_1_WIDTH, ground_image.get_width()):
         level_surface.blit(ground_image, (x, H - GROUND_H))
-
     while level_1_part_1_in:
         now = pygame.time.get_ticks()
         for event in pygame.event.get():
@@ -1317,7 +1443,7 @@ def level_1_part_1():
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s:
-                    save_game(player, score)
+                    save_game_sql()
                     save_message_displayed = True
                     save_message_timer = now
                 elif event.key == pygame.K_ESCAPE:
@@ -1391,7 +1517,7 @@ def level_1_part_1():
                 )
             ):
                 level_1_part_1_scroll_pos = 3200
-                save_game(player, score)
+                save_game_sql()
                 level_part_1 = False
                 level_1_part_2()
                 return
@@ -1409,8 +1535,9 @@ def level_1_part_1():
 
 # Вторая часть уровня
 def level_1_part_2():
-    global monsters, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, player_points, HP, from_level, from_menu, playing_menu, Shield
-    load_upgrades(player)
+    global monsters, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, player_points, \
+        HP, from_level, from_menu, playing_menu, Shield, level1_cleared, level2_cleared
+    load_upgrades()
     HP = player.HP
     Shield = player.shield
     # Обнуляем список врагов и таймеры при входе
@@ -1442,14 +1569,14 @@ def level_1_part_2():
                     player.can_jump = True
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s:
-                    save_game(player, score)
+                    save_game_sql()
                     save_message_displayed = True
                     save_message_timer = now
                 elif event.key == pygame.K_ESCAPE:
                     pause()
                 elif player.is_out:
-                    score, level_1_part_1_scroll_pos = load_game(player)
-                    load_upgrades(player)
+                    load_game_sql()
+                    load_upgrades()
                     HP = player.HP
                     player.respawn()
                     monsters.clear()
@@ -1525,17 +1652,28 @@ def level_1_part_2():
                     W // 3 * 2,
                     20,
                 )
+                level1_cleared = True
+                cursor = saving.cursor()
+                cursor.execute('''DELETE FROM levels WHERE id NOT IN (
+                                                        SELECT id FROM levels ORDER BY id DESC LIMIT 10)
+                                                ''')
+                cursor.execute(
+                    'INSERT INTO levels (cleared, level_number) VALUES (?, ?)',
+                    (int(level1_cleared), 1))
+                cursor.execute(
+                    'INSERT INTO levels (cleared, level_number) VALUES (?, ?)',
+                    (int(level2_cleared), 2))
+                cursor.execute('DELETE FROM game_progress')
+                saving.commit()
                 pygame.mixer.music.pause()
                 pygame.display.flip()
                 clock.tick(FPS)
 
             # Очищаем сохранение и выходим
-            with open("Save_files/last.json", "w"):
-                pass
             pygame.time.wait(2000)
             player_points += 3
-            save_upgrades(player)
-            save_settings()
+            save_upgrades()
+            save_settings_sql()
             playing_menu = True
             from_level = True
             from_menu = False
@@ -1584,8 +1722,8 @@ def level_1_part_2():
                                 if Shield >= 1:
                                     Shield -= 1
                                     player.shield -= 1
-                                    save_upgrades(player)
-                                    load_upgrades(player)
+                                    save_upgrades()
+                                    load_upgrades()
                                     invincible = True
                                     invincible_end_time = now + 1000
                                     pygame.time.set_timer(pygame.USEREVENT, 1000)
@@ -1623,11 +1761,11 @@ def level_2_part_1():
     playing_level = True
     stop_music()
     play_level_music()
-    load_upgrades(player)
+    load_upgrades()
     # Создаем большую поверхность для уровня
     level_surface = pygame.Surface((level_1_part_1_WIDTH, H))
     level_surface.fill((92, 148, 252))  # Основной фон
-    score, level_1_part_1_scroll_pos = load_game(player)
+    load_game_sql()
     # Рисуем землю
     for x in range(0, level_1_part_1_WIDTH, ground_image.get_width()):
         level_surface.blit(ground_image, (x, H - GROUND_H))
@@ -1641,7 +1779,7 @@ def level_2_part_1():
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s:
-                    save_game(player, score)
+                    save_game_sql()
                     save_message_displayed = True
                     save_message_timer = now
                 elif event.key == pygame.K_ESCAPE:
@@ -1715,7 +1853,7 @@ def level_2_part_1():
                 )
             ):
                 level_1_part_1_scroll_pos = 3200
-                save_game(player, score)
+                save_game_sql()
                 level_part_1 = False
                 level_2_part_2()
                 return
@@ -1733,8 +1871,9 @@ def level_2_part_1():
 
 # Вторая часть уровня
 def level_2_part_2():
-    global monsters, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, player_points, HP, from_level, from_menu, playing_menu, Shield
-    load_upgrades(player)
+    global monsters, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, player_points, HP, \
+        from_level, from_menu, playing_menu, Shield, level2_cleared, level1_cleared
+    load_upgrades()
     HP = player.HP
     Shield = player.shield
     # Обнуляем список врагов и таймеры при входе
@@ -1766,14 +1905,14 @@ def level_2_part_2():
                     player.can_jump = True
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s:
-                    save_game(player, score)
+                    save_game_sql()
                     save_message_displayed = True
                     save_message_timer = now
                 elif event.key == pygame.K_ESCAPE:
                     pause()
                 elif player.is_out:
-                    score, level_1_part_1_scroll_pos = load_game(player)
-                    load_upgrades(player)
+                    load_game_sql()
+                    load_upgrades()
                     HP = player.HP
                     player.respawn()
                     monsters.clear()
@@ -1849,17 +1988,28 @@ def level_2_part_2():
                     W // 3 * 2,
                     20,
                 )
+                level2_cleared = True
+                cursor = saving.cursor()
+                cursor.execute('''DELETE FROM levels WHERE id NOT IN (
+                                        SELECT id FROM levels ORDER BY id DESC LIMIT 10)
+                                ''')
+                cursor.execute(
+                    'INSERT INTO levels (cleared, level_number) VALUES (?, ?)',
+                    (int(level1_cleared), 1))
+                cursor.execute(
+                    'INSERT INTO levels (cleared, level_number) VALUES (?, ?)',
+                    (int(level2_cleared), 2))
+                cursor.execute('DELETE FROM game_progress')
+                saving.commit()
                 pygame.mixer.music.pause()
                 pygame.display.flip()
                 clock.tick(FPS)
 
             # Очищаем сохранение и выходим
-            with open("Save_files/last.json", "w"):
-                pass
             pygame.time.wait(2000)
             player_points += 3
-            save_upgrades(player)
-            save_settings()
+            save_upgrades()
+            save_settings_sql()
             playing_menu = True
             from_level = True
             from_menu = False
@@ -1908,8 +2058,8 @@ def level_2_part_2():
                                 if Shield >= 1:
                                     Shield -= 1
                                     player.shield -= 1
-                                    save_upgrades(player)
-                                    load_upgrades(player)
+                                    save_upgrades()
+                                    load_upgrades()
                                     invincible = True
                                     invincible_end_time = now + 1000
                                     pygame.time.set_timer(pygame.USEREVENT, 1000)
@@ -1932,9 +2082,11 @@ def level_2_part_2():
         pygame.display.flip()
         clock.tick(FPS)
 
-
 # Запуск игры
-load_settings()
+load_settings_sql()
+load_game_sql()
+load_skin()
+load_upgrades()
 music_playing = False
 play_menu_music()
 main_menu()

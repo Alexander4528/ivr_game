@@ -1,4 +1,4 @@
-#Импорт необходимых библиотек
+# Импорт необходимых библиотек
 import pygame
 import sys
 import random
@@ -8,7 +8,7 @@ from pygame import Surface
 pygame.init()
 
 # Настройки игры
-font_path = 'caviar-dreams.ttf'
+font_path = "caviar-dreams.ttf"
 font_large = pygame.font.Font(font_path, 48)
 font_medium = pygame.font.Font(font_path, 36)
 font_small = pygame.font.Font(font_path, 24)
@@ -20,7 +20,7 @@ last_spawn_time = 0
 spawn_delay = 3000
 score = 0
 
-#Переменные для активации разделов игры(уровни, меню, настройки и т.д.)
+# Переменные для активации разделов игры(уровни, меню, настройки и т.д.)
 menu = False
 level_1_part_1_in = False
 level_2_part_1_in = False
@@ -31,7 +31,7 @@ playing_level = False
 from_menu = False
 from_level = False
 
-#Переменные для скроллинга
+# Переменные для скроллинга
 level_1_part_1_WIDTH = 5000
 level_1_part_1_scroll_pos = 0
 W, H = 1000, 800
@@ -39,99 +39,140 @@ screen = pygame.display.set_mode((W, H))
 FPS = 60
 clock = pygame.time.Clock()
 
-#Экран при отсутствии изображения скина
+# Экран при отсутствии изображения скина
 surface_image = pygame.Surface((40, 50))
 
 # Загрузка изображений
-ground_image: Surface = pygame.image.load('Sprites and objects/Objects, background and other/ground.jpg')
+ground_image: Surface = pygame.image.load(
+    "Sprites and objects/Objects, background and other/ground.jpg"
+)
 ground_image = pygame.transform.scale(ground_image, (W, 60))
 GROUND_H = ground_image.get_height()
 
-me_image = pygame.image.load('Sprites and objects/Skins/Me/Me.png')
+me_image = pygame.image.load("Sprites and objects/Skins/Me/Me.png")
 me_image = pygame.transform.scale(me_image, (70, 80))
 
-portal_image = pygame.image.load('Sprites and objects/Objects, background and other/p2.gif')
+portal_image = pygame.image.load(
+    "Sprites and objects/Objects, background and other/p2.gif"
+)
 portal_image = pygame.transform.scale(portal_image, (80, 90))
 
-me_damaged_image = pygame.image.load('Sprites and objects/Skins/Me/Me_damaged.png')
+me_damaged_image = pygame.image.load("Sprites and objects/Skins/Me/Me_damaged.png")
 me_damaged_image = pygame.transform.scale(me_damaged_image, (70, 80))
 
-#Переменные для меню
+# Переменные для меню
 menu_move_up = False
 menu_move_down = False
 menu_last_move_time = 0
 MENU_MOVE_DELAY = 300
 
+# Переключение музыки
+music_on = True
+menu_music = "Music/Carmen_Twillie_The_Lion_King_-_Circle_Of_Life_48727462.mp3"
+level_1_part_1_music = "Music/Смешарики - Погоня.mp3"
+level_2_part_1_music = "Music/Geometry_Dash_-_Geometrical_Dominator_67148396.mp3"
+Unlock_skin_sound = pygame.mixer.Sound("Sounds/mixkit-unlock-new-item-game-notification-254.wav")
+
+unlock_message = None
+unlock_message_time = 0
+UNLOCK_MESSAGE_DURATION = 3000  # Время отображения в миллисекундах
+
 # Скины
 skins = [
-    {'name': 'Классика',
-     'unlocked': True,
-     'image': 'Sprites and objects/Skins/Me/Me.png',
-     'walk_right': ['Sprites and objects/Skins/Me/Me-right1.png',
-                    'Sprites and objects/Skins/Me/Me-right2.png',
-                    'Sprites and objects/Skins/Me/Me-right3.png',
-                    'Sprites and objects/Skins/Me/Me-right4.png'],
-     'walk_left': ['Sprites and objects/Skins/Me/Me-left1.png',
-                   'Sprites and objects/Skins/Me/Me-left2.png',
-                   'Sprites and objects/Skins/Me/Me-left3.png',
-                   'Sprites and objects/Skins/Me/Me-left4.png'],
-     'damaged': 'Sprites and objects/Skins/Me/Me_damaged.png',
-     'unlock': ' ',
-     'img': surface_image},
-    {'name': 'Потерянный',
-     'unlocked': True,
-     'image': 'Sprites and objects/Skins/Lost/Lost_Me.png',
-     'walk_right': ['Sprites and objects/Skins/Lost/Lost-right1.png',
-                    'Sprites and objects/Skins/Lost/Lost-right2.png',
-                    'Sprites and objects/Skins/Lost/Lost-right3.png',
-                    'Sprites and objects/Skins/Lost/Lost-right4.png'],
-     'walk_left': ['Sprites and objects/Skins/Lost/Lost-left1.png',
-                   'Sprites and objects/Skins/Lost/Lost-left2.png',
-                   'Sprites and objects/Skins/Lost/Lost-left3.png',
-                   'Sprites and objects/Skins/Lost/Lost-left4.png'],
-     'damaged': 'Sprites and objects/Skins/Lost/Lost_Me-Damaged.png',
-     'unlock': ' ',
-     'img': surface_image},
-    {'name': 'Соник',
-     'unlocked': False,
-     'image': 'Sprites and objects/Skins/Sonic/Sonic.png',
-     'walk_right': ['Sprites and objects/Skins/Sonic/Sonic-right1.png',
-                    'Sprites and objects/Skins/Sonic/Sonic-right2.png',
-                    'Sprites and objects/Skins/Sonic/Sonic-right3.png',
-                    'Sprites and objects/Skins/Sonic/Sonic-right4.png'],
-     'walk_left': ['Sprites and objects/Skins/Sonic/Sonic-left1.png',
-                   'Sprites and objects/Skins/Sonic/Sonic-left2.png',
-                   'Sprites and objects/Skins/Sonic/Sonic-left3.png',
-                   'Sprites and objects/Skins/Sonic/Sonic-left4.png'],
-     'unlock': 'Открой способность "Бег"',
-     'damaged': 'Sprites and objects/Skins/Sonic/Sonic-damaged.png',
-     'img': surface_image},
-    {'name': 'Марио',
-     'unlocked': False,
-     'image': 'Sprites and objects/Skins/Mario/Mario.png',
-     'walk_right': ['Sprites and objects/Skins/Mario/Mario_right1.png',
-                    'Sprites and objects/Skins/Mario/Mario_right2.png',
-                    'Sprites and objects/Skins/Mario/Mario_right3.png',
-                    'Sprites and objects/Skins/Mario/Mario_right4.png'],
-     'walk_left': ['Sprites and objects/Skins/Mario/Mario_left1.png',
-                   'Sprites and objects/Skins/Mario/Mario_left2.png',
-                   'Sprites and objects/Skins/Mario/Mario_left3.png',
-                   'Sprites and objects/Skins/Mario/Mario_left4.png'],
-     'unlock': 'Открой способность "Двойной прыжок"',
-     'damaged': 'Sprites and objects/Skins/Mario/Mario_damaged.png',
-     'img': surface_image},
-    {'name': 'Эксклюзивный',
-     'unlocked': False,
-     'image': 'exclusive.png',
-     'unlock': 'Пройди игру на всех уровнях сложности',
-     'img': surface_image}
+    {
+        "name": "Классика",
+        "unlocked": True,
+        "image": "Sprites and objects/Skins/Me/Me.png",
+        "walk_right": [
+            "Sprites and objects/Skins/Me/Me-right1.png",
+            "Sprites and objects/Skins/Me/Me-right2.png",
+            "Sprites and objects/Skins/Me/Me-right3.png",
+            "Sprites and objects/Skins/Me/Me-right4.png",
+        ],
+        "walk_left": [
+            "Sprites and objects/Skins/Me/Me-left1.png",
+            "Sprites and objects/Skins/Me/Me-left2.png",
+            "Sprites and objects/Skins/Me/Me-left3.png",
+            "Sprites and objects/Skins/Me/Me-left4.png",
+        ],
+        "damaged": "Sprites and objects/Skins/Me/Me_damaged.png",
+        "unlock": " ",
+        "img": surface_image,
+    },
+    {
+        "name": "Потерянный",
+        "unlocked": True,
+        "image": "Sprites and objects/Skins/Lost/Lost_Me.png",
+        "walk_right": [
+            "Sprites and objects/Skins/Lost/Lost-right1.png",
+            "Sprites and objects/Skins/Lost/Lost-right2.png",
+            "Sprites and objects/Skins/Lost/Lost-right3.png",
+            "Sprites and objects/Skins/Lost/Lost-right4.png",
+        ],
+        "walk_left": [
+            "Sprites and objects/Skins/Lost/Lost-left1.png",
+            "Sprites and objects/Skins/Lost/Lost-left2.png",
+            "Sprites and objects/Skins/Lost/Lost-left3.png",
+            "Sprites and objects/Skins/Lost/Lost-left4.png",
+        ],
+        "damaged": "Sprites and objects/Skins/Lost/Lost_Me-Damaged.png",
+        "unlock": " ",
+        "img": surface_image,
+    },
+    {
+        "name": "Соник",
+        "unlocked": False,
+        "image": "Sprites and objects/Skins/Sonic/Sonic.png",
+        "walk_right": [
+            "Sprites and objects/Skins/Sonic/Sonic-right1.png",
+            "Sprites and objects/Skins/Sonic/Sonic-right2.png",
+            "Sprites and objects/Skins/Sonic/Sonic-right3.png",
+            "Sprites and objects/Skins/Sonic/Sonic-right4.png",
+        ],
+        "walk_left": [
+            "Sprites and objects/Skins/Sonic/Sonic-left1.png",
+            "Sprites and objects/Skins/Sonic/Sonic-left2.png",
+            "Sprites and objects/Skins/Sonic/Sonic-left3.png",
+            "Sprites and objects/Skins/Sonic/Sonic-left4.png",
+        ],
+        "unlock": 'Открой способность "Бег"',
+        "damaged": "Sprites and objects/Skins/Sonic/Sonic-damaged.png",
+        "img": surface_image,
+    },
+    {
+        "name": "Марио",
+        "unlocked": False,
+        "image": "Sprites and objects/Skins/Mario/Mario.png",
+        "walk_right": [
+            "Sprites and objects/Skins/Mario/Mario_right1.png",
+            "Sprites and objects/Skins/Mario/Mario_right2.png",
+            "Sprites and objects/Skins/Mario/Mario_right3.png",
+            "Sprites and objects/Skins/Mario/Mario_right4.png",
+        ],
+        "walk_left": [
+            "Sprites and objects/Skins/Mario/Mario_left1.png",
+            "Sprites and objects/Skins/Mario/Mario_left2.png",
+            "Sprites and objects/Skins/Mario/Mario_left3.png",
+            "Sprites and objects/Skins/Mario/Mario_left4.png",
+        ],
+        "unlock": 'Открой способность "Двойной прыжок"',
+        "damaged": "Sprites and objects/Skins/Mario/Mario_damaged.png",
+        "img": surface_image,
+    },
+    {
+        "name": "Эксклюзивный",
+        "unlocked": False,
+        "image": "exclusive.png",
+        "unlock": "Пройди игру на всех уровнях сложности",
+        "img": surface_image,
+    },
 ]
 
 # Анимации
 running_sprites_right = []
 for i in range(1, 5):
     try:
-        img = pygame.image.load(f'Me-right{i}.png')
+        img = pygame.image.load(f"Me-right{i}.png")
         running_sprites_right.append(pygame.transform.scale(img, (70, 80)))
     except:
         running_sprites_right.append(pygame.Surface((70, 80)))
@@ -139,7 +180,7 @@ for i in range(1, 5):
 running_sprites_left = []
 for i in range(1, 5):
     try:
-        img = pygame.image.load(f'Me-left{i}.png')
+        img = pygame.image.load(f"Me-left{i}.png")
         running_sprites_left.append(pygame.transform.scale(img, (70, 80)))
     except:
         running_sprites_left.append(pygame.Surface((70, 80)))
@@ -150,12 +191,12 @@ skin_message_timer = 0
 # Загрузка изображений скинов
 for skin_number in skins:
     try:
-        img = pygame.image.load(skin_number['image'])
-        skin_number['img'] = pygame.transform.scale(img, (40, 50))
+        img = pygame.image.load(skin_number["image"])
+        skin_number["img"] = pygame.transform.scale(img, (40, 50))
     except:
         pass
 
-#Загрузка скина
+# Загрузка скина
 def apply_skin(skin_index):
     global me_image, running_sprites_right, running_sprites_left, me_damaged_image
 
@@ -165,26 +206,28 @@ def apply_skin(skin_index):
     skin = skins[skin_index]
     try:
         # Загружаем основное изображение
-        me_image = pygame.transform.scale(pygame.image.load(skin['image']), (70, 80))
+        me_image = pygame.transform.scale(pygame.image.load(skin["image"]), (70, 80))
 
         # Загружаем анимации
-        if skin.get('walk_right', []):
+        if skin.get("walk_right", []):
             running_sprites_right = [
                 pygame.transform.scale(pygame.image.load(fname), (70, 80))
-                for fname in skin['walk_right']
+                for fname in skin["walk_right"]
             ]
         else:
             running_sprites_right = [me_image] * 4
 
-        if skin.get('walk_left', []):
+        if skin.get("walk_left", []):
             running_sprites_left = [
                 pygame.transform.scale(pygame.image.load(fname), (70, 80))
-                for fname in skin['walk_left']
+                for fname in skin["walk_left"]
             ]
         else:
             running_sprites_left = [me_image] * 4
-        if skin.get('damaged', []):
-            me_damaged_image = pygame.transform.scale(pygame.image.load(skin['damaged']), (70, 80))
+        if skin.get("damaged", []):
+            me_damaged_image = pygame.transform.scale(
+                pygame.image.load(skin["damaged"]), (70, 80)
+            )
         else:
             me_damaged_image = me_image
     except Exception as e:
@@ -193,117 +236,122 @@ def apply_skin(skin_index):
         if skin_index != 0:
             apply_skin(0)
 
-#сохранение скина
-def save_skin(filename='Save_files/Skin_selected.json'):
+
+# сохранение скина
+def save_skin(filename="Save_files/Skin_selected.json"):
     global current_skin_index
     current_skin = {
-        'current_skin_index': current_skin_index,
+        "current_skin_index": current_skin_index,
     }
-    with open(filename, 'w') as f:
+    with open(filename, "w") as f:
         json_str = json.dumps(current_skin)
         f.write(json_str)
 
-#Сохранение прогресса
-def save_game(play, current_score=None, filename='Save_files/last.json'):
+
+# Сохранение прогресса
+def save_game(play, current_score=None, filename="Save_files/last.json"):
     global level_1_part_1_scroll_pos
     game_state = {
-        'player_pos': level_1_part_1_scroll_pos,
-        'difficulty level': difficulty_level
+        "player_pos": level_1_part_1_scroll_pos,
+        "difficulty level": difficulty_level,
     }
     if current_score is not None:
-        game_state['score'] = current_score
-        game_state['HP'] = play.HP
-    with open(filename, 'w') as f:
+        game_state["score"] = current_score
+        game_state["HP"] = play.HP
+    with open(filename, "w") as f:
         json_str = json.dumps(game_state)
         f.write(json_str)
 
-#Сохранение настроек
-def save_settings(filename='Save_files/settings.json'):
+
+# Сохранение настроек
+def save_settings(filename="Save_files/settings.json"):
     current_settings = {
-        'music_on': music_on,
-        'player_points' : player_points,
-        'difficulty_level': difficulty_level
+        "music_on": music_on,
+        "player_points": player_points,
+        "difficulty_level": difficulty_level,
     }
-    with open(filename, 'w') as f:
+    with open(filename, "w") as f:
         json_str = json.dumps(current_settings)
         f.write(json_str)
 
-#Сохранение характеристик
-def save_upgrades(play, filename='Save_files/upgrades.json'):
+
+# Сохранение характеристик
+def save_upgrades(play, filename="Save_files/upgrades.json"):
     current_char_stats = {
-        'player_points': player_points,
-        'Attack': play.attack,
-        'HP' : play.HP,
-        'Running' : play.running_unlocked,
-        'Double jump' : play.double_jump_unlocked,
-        'Shield': play.shield
+        "player_points": player_points,
+        "Attack": play.attack,
+        "HP": play.HP,
+        "Running": play.running_unlocked,
+        "Double jump": play.double_jump_unlocked,
+        "Shield": play.shield,
     }
-    with open(filename, 'w') as f:
+    with open(filename, "w") as f:
         json_str = json.dumps(current_char_stats)
         f.write(json_str)
 
-#Загрузка последнего сохранения
-def load_game(play, filename='Save_files/last.json'):
+
+# Загрузка последнего сохранения
+def load_game(play, filename="Save_files/last.json"):
     global current_skin_index, level_1_part_1_scroll_pos
 
     try:
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             game_state = json.load(f)
-            level_1_part_1_scroll_pos = game_state['player_pos']
+            level_1_part_1_scroll_pos = game_state["player_pos"]
 
-            if 'HP' in game_state:
-                play.HP = game_state['HP']
-            return game_state.get('score', 0), game_state.get('player_pos', 0)
+            if "HP" in game_state:
+                play.HP = game_state["HP"]
+            return game_state.get("score", 0), game_state.get("player_pos", 0)
     except (FileNotFoundError, json.JSONDecodeError):
         level_1_part_1_scroll_pos = 0
         return 0, level_1_part_1_scroll_pos
 
-#Загрузка настроек
+
+# Загрузка настроек
 def load_settings():
     global music_on, player_points, difficulty_level
     try:
-        with open('Save_files/settings.json', 'r') as f:
+        with open("Save_files/settings.json", "r") as f:
             current_settings = json.load(f)
-            music_on = current_settings.get('music_on', True)
-            player_points = current_settings.get('player_points', 0)
-            difficulty_level = current_settings.get('difficulty_level', 0)
+            music_on = current_settings.get("music_on", True)
+            player_points = current_settings.get("player_points", 0)
+            difficulty_level = current_settings.get("difficulty_level", 0)
     except (FileNotFoundError, json.JSONDecodeError):
         pass
+
 
 def load_skin():
     global current_skin_index
     try:
-        with open('Save_files/Skin_selected.json', 'r') as f:
+        with open("Save_files/Skin_selected.json", "r") as f:
             current_skin = json.load(f)
-            current_skin_index = current_skin.get('current_skin_index', 0)
+            current_skin_index = current_skin.get("current_skin_index", 0)
     except (FileNotFoundError, json.JSONDecodeError):
         pass
 
-#Загрузка улучшении
+
+# Загрузка улучшении
 def load_upgrades(play):
     global player_points
     try:
-        with open('Save_files/upgrades.json', 'r') as f:
+        with open("Save_files/upgrades.json", "r") as f:
             current_upgrades = json.load(f)
-            player_points = current_upgrades.get('player_points', 0)
-            play.attack = current_upgrades.get('Attack', 1)
-            play.HP = current_upgrades.get('HP', 3)
-            play.running_unlocked = current_upgrades.get('Running', False)
-            play.double_jump_unlocked = current_upgrades.get('Double jump', False)
-            play.shield = current_upgrades.get('Shield', 0)
+            player_points = current_upgrades.get("player_points", 0)
+            play.attack = current_upgrades.get("Attack", 1)
+            play.HP = current_upgrades.get("HP", 3)
+            play.running_unlocked = current_upgrades.get("Running", False)
+            play.double_jump_unlocked = current_upgrades.get("Double jump", False)
+            play.shield = current_upgrades.get("Shield", 0)
     except (FileNotFoundError, json.JSONDecodeError):
         pass
 
-#Текст
+
+# Текст
 def draw_text(text, font, color, surface, x, y):
     text_obj = font.render(text, True, color)
     rect = text_obj.get_rect(center=(x, y))
     surface.blit(text_obj, rect)
-#Переключение музыки
-music_on = True
-menu_music = 'Music/Carmen_Twillie_The_Lion_King_-_Circle_Of_Life_48727462.mp3'
-level_1_part_1_music = 'Music/Смешарики - Погоня.mp3'
-level_2_part_1_music = 'Music/Geometry_Dash_-_Geometrical_Dominator_67148396.mp3'
+
 def play_menu_music():
     global music_playing, music_on, playing_menu
     if not music_playing and music_on and playing_menu:
@@ -315,6 +363,7 @@ def play_menu_music():
             music_on = True
         except Exception as e:
             print(f"Ошибка воспроизведения меню: {e}")
+
 
 def play_level_music():
     global music_playing, music_on, playing_level, level_1_part_1_in, level_2_part_1_in
@@ -331,10 +380,12 @@ def play_level_music():
         except Exception as e:
             print(f"Ошибка воспроизведения уровня: {e}")
 
+
 def stop_music():
     global music_playing
     pygame.mixer.music.stop()
     music_playing = False
+
 
 def toggle_music():
     global music_on
@@ -345,14 +396,15 @@ def toggle_music():
         pygame.mixer.music.pause()
     save_settings()
 
-#Пауза
+
+# Пауза
 def pause():
     global music_on, playing_menu, from_level, from_menu, score, level_1_part_1_in, level_2_part_1_in
     load_settings()
     options_pause_rects = [
-        pygame.Rect(W // 2 - 100, H // 2 , 200, 40),
+        pygame.Rect(W // 2 - 100, H // 2, 200, 40),
         pygame.Rect(W // 2 - 100, H // 2 + 50, 200, 40),
-        pygame.Rect(W // 2 - 100, H // 2 + 100, 200, 40)
+        pygame.Rect(W // 2 - 100, H // 2 + 100, 200, 40),
     ]
     paused = True
     overlay = pygame.Surface((W, H), pygame.SRCALPHA)
@@ -389,7 +441,6 @@ def pause():
                                 level_2_part_1_in = False
                             level_menu()
 
-
         mouse_pos = pygame.mouse.get_pos()
 
         # Отрисовка полупрозрачного фона
@@ -397,7 +448,7 @@ def pause():
         draw_text("ПАУЗА", font_large, (255, 255, 255), screen, W // 2, H // 4)
 
         # Получаем текущие цвета пунктов меню
-        for j, opt in enumerate(['Музыка', 'Управление', 'Назад']):
+        for j, opt in enumerate(["Музыка", "Управление", "Назад"]):
             rect = options_pause_rects[j]
             if rect.collidepoint(mouse_pos):
                 color = (255, 255, 255)  # выделение при наведении
@@ -415,7 +466,8 @@ def pause():
         clock.tick(FPS)
     pygame.event.clear(pygame.KEYDOWN)
 
-#Характеристики и функции игрока
+
+# Характеристики и функции игрока
 class Player:
     def __init__(self):
         self.speed = 5
@@ -446,13 +498,17 @@ class Player:
     def handle_input(self):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-            if self.running_unlocked and (keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]):
+            if self.running_unlocked and (
+                keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
+            ):
                 self.rect.x -= 2 * self.speed
             else:
                 self.rect.x -= self.speed
             self.update_animation()
         elif keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            if self.running_unlocked and (keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]):
+            if self.running_unlocked and (
+                keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
+            ):
                 self.rect.x += 2 * self.speed
             else:
                 self.rect.x += self.speed
@@ -486,11 +542,15 @@ class Player:
         animation_delay = 50 if (is_running_1 or is_running_2) else 70
         if now - self.last_update_time > animation_delay:
             if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-                self.run_animation_index = (self.run_animation_index + 1) % len(self.running_sprites_left)
+                self.run_animation_index = (self.run_animation_index + 1) % len(
+                    self.running_sprites_left
+                )
                 self.image = self.running_sprites_left[self.run_animation_index]
                 self.last_update_time = now
             elif keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-                self.run_animation_index = (self.run_animation_index + 1) % len(self.running_sprites_right)
+                self.run_animation_index = (self.run_animation_index + 1) % len(
+                    self.running_sprites_right
+                )
                 self.image = self.running_sprites_right[self.run_animation_index]
                 self.last_update_time = now
 
@@ -551,11 +611,14 @@ class Player:
         self.y_speed = -15  # Сильный прыжок вверх
         self.falling_through = False
 
-#Характеристика и функции врагов
+
+# Характеристика и функции врагов
 class Monster:
     def __init__(self):
         try:
-            self.image = pygame.transform.scale(pygame.image.load('Sprites and objects/Enemies/Enemy.png'), (90, 90))
+            self.image = pygame.transform.scale(
+                pygame.image.load("Sprites and objects/Enemies/Enemy.png"), (90, 90)
+            )
         except:
             self.image = pygame.Surface((90, 90))
         self.rect = self.image.get_rect()
@@ -577,20 +640,27 @@ class Monster:
             self.x_speed = self.speed
             self.rect.bottomright = (0, 0)
             try:
-                self.image = pygame.transform.scale(pygame.image.load('Sprites and objects/Enemies/Enemy-left.png'), (90, 90))
+                self.image = pygame.transform.scale(
+                    pygame.image.load("Sprites and objects/Enemies/Enemy-left.png"),
+                    (90, 90),
+                )
             except:
                 self.image = pygame.Surface((90, 90))
         else:
             self.x_speed = -self.speed
             self.rect.bottomright = (W, 0)
             try:
-                self.image = pygame.transform.scale(pygame.image.load('Sprites and objects/Enemies/Enemy.png'), (90, 90))
+                self.image = pygame.transform.scale(
+                    pygame.image.load("Sprites and objects/Enemies/Enemy.png"), (90, 90)
+                )
             except:
                 self.image = pygame.Surface((90, 90))
 
     def kill(self):
         try:
-            self.image = pygame.transform.scale(pygame.image.load('Sprites and objects/Enemies/EnemyDead.png'), (90, 90))
+            self.image = pygame.transform.scale(
+                pygame.image.load("Sprites and objects/Enemies/EnemyDead.png"), (90, 90)
+            )
         except:
             self.image = pygame.Surface((90, 90))
         self.is_dead = True
@@ -615,20 +685,21 @@ class Monster:
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
+
 player = Player()
 
-#Главное меню
+# Главное меню
 def main_menu():
     global player, menu, levels_in, from_menu, from_level, current_skin_index
     load_settings()
     menu = True
     options_rects = [
-        pygame.Rect(W // 2 - 100, H // 2 - 100, 200, 40), # "Начать игру"
+        pygame.Rect(W // 2 - 100, H // 2 - 100, 200, 40),  # "Начать игру"
         pygame.Rect(W // 2 - 100, H // 2 - 50, 200, 40),  # "Скины"
-        pygame.Rect(W // 2 - 100, H // 2, 200, 40),       # "Улучшение"
+        pygame.Rect(W // 2 - 100, H // 2, 200, 40),  # "Улучшение"
         pygame.Rect(W // 2 - 100, H // 2 + 50, 200, 40),  # "Настройки"
-        pygame.Rect(W // 2 - 100, H // 2 + 100, 200, 40), # "Секреты"
-        pygame.Rect(W // 2 - 100, H // 2 + 150, 200, 40)  # "Выход"
+        pygame.Rect(W // 2 - 100, H // 2 + 100, 200, 40),  # "Секреты"
+        pygame.Rect(W // 2 - 100, H // 2 + 150, 200, 40),  # "Выход"
     ]
     temp_player = Player()
     load_game(temp_player)
@@ -642,7 +713,9 @@ def main_menu():
                 save_settings()
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # левый клик
+            elif (
+                event.type == pygame.MOUSEBUTTONDOWN and event.button == 1
+            ):  # левый клик
                 mouse_pos = event.pos
                 for idx, rect in enumerate(options_rects):
                     if rect.collidepoint(mouse_pos):
@@ -666,8 +739,15 @@ def main_menu():
         mouse_pos = pygame.mouse.get_pos()
 
         screen.fill((92, 148, 252))
-        draw_text('Главное меню', font_large, (255, 255, 255), screen, W // 2, H // 4)
-        options = ['Начать игру', 'Скины', 'Улучшение', 'Настройки', 'Секреты', 'Выход из игры']
+        draw_text("Главное меню", font_large, (255, 255, 255), screen, W // 2, H // 4)
+        options = [
+            "Начать игру",
+            "Скины",
+            "Улучшение",
+            "Настройки",
+            "Секреты",
+            "Выход из игры",
+        ]
         for j, opt in enumerate(options):
             rect = options_rects[j]
             if rect.collidepoint(mouse_pos):
@@ -678,18 +758,19 @@ def main_menu():
         pygame.display.flip()
         clock.tick(60)
 
-#Меню со скинами
+
+# Меню со скинами
 def skin_menu():
     global current_skin_index, me_image, running_sprites_right, running_sprites_left, skin_message_timer
 
     in_skin_menu = True
     for skin in skins:
-        if skin['name'] == 'Соник':
+        if skin["name"] == "Соник":
             if player.running_unlocked:
-                skin['unlocked'] = True
-        if skin['name'] == 'Марио':
+                skin["unlocked"] = True
+        if skin["name"] == "Марио":
             if player.double_jump_unlocked:
-                skin['unlocked'] = True
+                skin["unlocked"] = True
     # Создаем список прямоугольников для кликабельных областей
     skin_rects = []
     for idx in range(len(skins)):
@@ -710,34 +791,36 @@ def skin_menu():
                 mouse_clicked = True
 
         screen.fill((92, 148, 252))
-        draw_text('Выбор скина', font_large, (255, 255, 255), screen, W // 2, H // 6 - 40)
+        draw_text(
+            "Выбор скина", font_large, (255, 255, 255), screen, W // 2, H // 6 - 40
+        )
 
         for skin in skins:
-            if skin['name'] == 'Соник':
+            if skin["name"] == "Соник":
                 if player.running_unlocked:
-                    skin['unlocked'] = True
-            if skin['name'] == 'Марио':
+                    skin["unlocked"] = True
+            if skin["name"] == "Марио":
                 if player.double_jump_unlocked:
-                    skin['unlocked'] = True
+                    skin["unlocked"] = True
 
         # Отрисовка скинов и обработка кликов
         for idx, skin in enumerate(skins):
             y_pos = H // 4 + idx * 60
             is_hovered = skin_rects[idx].collidepoint(mouse_pos)
-            is_selected = (idx == current_skin_index)
+            is_selected = idx == current_skin_index
             color = (255, 255, 255) if (is_hovered or is_selected) else (0, 0, 0)
 
-            draw_text(skin['name'], font_small, color, screen, W // 2, y_pos)
+            draw_text(skin["name"], font_small, color, screen, W // 2, y_pos)
 
-            if 'img' in skin:
-                img_surface = skin['img']
+            if "img" in skin:
+                img_surface = skin["img"]
                 if isinstance(img_surface, pygame.Surface):
                     img_rect = img_surface.get_rect(center=(W // 2 - 120, y_pos))
                     screen.blit(img_surface, img_rect)
-            status = 'Открыт' if skin['unlocked'] else 'Закрыт'
+            status = "Открыт" if skin["unlocked"] else "Закрыт"
             draw_text(status, font_small, color, screen, W // 2 + 150, y_pos)
 
-            if is_hovered and mouse_clicked and skin['unlocked']:
+            if is_hovered and mouse_clicked and skin["unlocked"]:
                 current_skin_index = idx
                 apply_skin(current_skin_index)
                 player.running_sprites_right = running_sprites_right
@@ -748,13 +831,20 @@ def skin_menu():
                 save_game(player)
                 save_skin()
 
-            if is_hovered and not skin['unlocked']:
-                draw_text(skin['unlock'], font_small, (255, 255, 255), screen, W // 2, H // 2 + 130)
+            if is_hovered and not skin["unlocked"]:
+                draw_text(
+                    skin["unlock"],
+                    font_small,
+                    (255, 255, 255),
+                    screen,
+                    W // 2,
+                    H // 2 + 130,
+                )
 
         # Кнопка "Назад"
         back_hovered = back_rect.collidepoint(mouse_pos)
         back_color = (255, 255, 255) if back_hovered else (0, 0, 0)
-        draw_text('Главное меню', font_small, back_color, screen, W // 2, H - 50)
+        draw_text("Главное меню", font_small, back_color, screen, W // 2, H - 50)
 
         if back_hovered and mouse_clicked:
             in_skin_menu = False
@@ -762,26 +852,27 @@ def skin_menu():
         pygame.display.flip()
         clock.tick(60)
 
+
 def settings():
     global music_on, player_points, difficulty_level
     load_upgrades(player)
     options_settings = [
-        'Уровень сложности',
-        'Музыка',
-        'Сброс прогресса',
-        'Сохранить настройки',
-        'Отменить',
-        'Управление',
-        'Главное меню'
+        "Уровень сложности",
+        "Музыка",
+        "Сброс прогресса",
+        "Сохранить настройки",
+        "Отменить",
+        "Управление",
+        "Главное меню",
     ]
     options_settings_rects = [
-        pygame.Rect(W // 2 - 100, H // 3, 200, 40),       # "Уровень сложности"
+        pygame.Rect(W // 2 - 100, H // 3, 200, 40),  # "Уровень сложности"
         pygame.Rect(W // 2 - 100, H // 3 + 50, 200, 40),  # "Музыка"
-        pygame.Rect(W // 2 - 100, H // 3 + 100, 200, 40), # "Сброс прогресса"
-        pygame.Rect(W // 2 - 100, H // 3 + 150, 200, 40), # "Сохранить настройки"
-        pygame.Rect(W // 2 - 100, H // 3 + 200, 200, 40), # "Отменить"
+        pygame.Rect(W // 2 - 100, H // 3 + 100, 200, 40),  # "Сброс прогресса"
+        pygame.Rect(W // 2 - 100, H // 3 + 150, 200, 40),  # "Сохранить настройки"
+        pygame.Rect(W // 2 - 100, H // 3 + 200, 200, 40),  # "Отменить"
         pygame.Rect(W // 2 - 100, H // 3 + 250, 200, 40),  # "Управление"
-        pygame.Rect(W // 2 - 100, H // 3 + 300, 200, 40)  # "Главное меню"
+        pygame.Rect(W // 2 - 100, H // 3 + 300, 200, 40),  # "Главное меню"
     ]
     # Объявляем переменные один раз перед циклом
     temp_points = player_points
@@ -792,7 +883,9 @@ def settings():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # левый клик
+            elif (
+                event.type == pygame.MOUSEBUTTONDOWN and event.button == 1
+            ):  # левый клик
                 mouse_pos = event.pos
                 for idx, rect in enumerate(options_settings_rects):
                     if rect.collidepoint(mouse_pos):
@@ -804,11 +897,11 @@ def settings():
                             if music_on:
                                 play_menu_music()
                         elif selected_idx == 2:
-                            with open('Save_files/last.json', 'w'):
+                            with open("Save_files/last.json", "w"):
                                 pass
-                            with open('Save_files/upgrades.json', 'w'):
+                            with open("Save_files/upgrades.json", "w"):
                                 pass
-                            with open('Save_files/settings.json', 'w'):
+                            with open("Save_files/settings.json", "w"):
                                 pass
                             player_points = 0
                         elif selected_idx == 3:
@@ -833,29 +926,40 @@ def settings():
         mouse_pos = pygame.mouse.get_pos()
         # Отрисовка
         screen.fill((92, 148, 252))
-        draw_text('Настройки', font_large, (255,255,255), screen, W // 2, H // 6)
+        draw_text("Настройки", font_large, (255, 255, 255), screen, W // 2, H // 6)
         for idx, opt in enumerate(options_settings):
             rect = options_settings_rects[idx]
             if rect.collidepoint(mouse_pos):
                 color = (255, 255, 255)
             else:
                 color = (0, 0, 0)
-            if options_settings[idx] == 'Музыка':
-                status = 'Вкл' if music_on else 'Выкл'
-                draw_text(f'Музыка: {status}', font_small, color, screen, W // 2, H // 3 + idx * 50)
-            elif options_settings[idx] == 'Уровень сложности':
-                levels = ['Легко', 'Средне', 'Сложно']
-                level_text = f'Уровень сложности: {levels[temp_difficulty]}'
-                draw_text(level_text, font_small, color, screen, W // 2, H // 3 + idx * 50)
+            if options_settings[idx] == "Музыка":
+                status = "Вкл" if music_on else "Выкл"
+                draw_text(
+                    f"Музыка: {status}",
+                    font_small,
+                    color,
+                    screen,
+                    W // 2,
+                    H // 3 + idx * 50,
+                )
+            elif options_settings[idx] == "Уровень сложности":
+                levels = ["Легко", "Средне", "Сложно"]
+                level_text = f"Уровень сложности: {levels[temp_difficulty]}"
+                draw_text(
+                    level_text, font_small, color, screen, W // 2, H // 3 + idx * 50
+                )
             else:
-                draw_text(opt, font_small, color, screen, W//2, H//3 + idx * 50)
-
+                draw_text(opt, font_small, color, screen, W // 2, H // 3 + idx * 50)
 
         # Кол-во очков
-        draw_text(f'Очки: {player_points}', font_small, (255,255,255), screen, W - 100, 50)
+        draw_text(
+            f"Очки: {player_points}", font_small, (255, 255, 255), screen, W - 100, 50
+        )
 
         pygame.display.flip()
         clock.tick(60)
+
 
 # Внутренний менеджер управления
 def management_menu():
@@ -873,13 +977,15 @@ def management_menu():
 
         mouse_pos = pygame.mouse.get_pos()
         screen.fill((92, 148, 252))
-        draw_text("Управление", font_large, (255, 255, 255), screen, W // 2, H // 3 - 80)
+        draw_text(
+            "Управление", font_large, (255, 255, 255), screen, W // 2, H // 3 - 80
+        )
         controls = [
-            'Передвижение: A / ←, D / →',
-            'Прыжок: W / ↑',
-            'Бег: (A / ←) / (D / →) + Shift',
-            'Пауза: ESC',
-            'Сохранение: S'
+            "Передвижение: A / ←, D / →",
+            "Прыжок: W / ↑",
+            "Бег: (A / ←) / (D / →) + Shift",
+            "Пауза: ESC",
+            "Сохранение: S",
         ]
         for h, control in enumerate(controls):
             draw_text(control, font_small, (0, 0, 0), screen, W // 2, H // 3 + h * 40)
@@ -888,12 +994,14 @@ def management_menu():
             color = (255, 255, 255)
         else:
             color = (0, 0, 0)
-        draw_text('Выход', font_small, color, screen, W//2, H - 50)
+        draw_text("Выход", font_small, color, screen, W // 2, H - 50)
         pygame.display.flip()
         clock.tick(60)
 
+
 def secrets():
     pass
+
 
 # Выбор уровней
 def level_menu():
@@ -901,14 +1009,24 @@ def level_menu():
     load_skin()
     # Создаем прямоугольники для кликабельных областей уровней
     level_rects = []
-    options = ['Уровень 1', 'Уровень 2', 'Уровень 3',
-               'Уровень 4', 'Уровень 5', 'Уровень 6',
-               'Уровень 7', 'Уровень 8', 'Уровень 9']
+    options = [
+        "Уровень 1",
+        "Уровень 2",
+        "Уровень 3",
+        "Уровень 4",
+        "Уровень 5",
+        "Уровень 6",
+        "Уровень 7",
+        "Уровень 8",
+        "Уровень 9",
+    ]
 
     for j in range(3):  # Первые 3 уровня слева
         level_rects.append(pygame.Rect(W // 3 - 200, H // 3 + j * 70 - 10, 150, 40))
     for j in range(3, 6):  # Следующие 3 уровня посередине
-        level_rects.append(pygame.Rect(W // 2 - 50, H // 3 + (j - 3) * 70 - 10, 150, 40))
+        level_rects.append(
+            pygame.Rect(W // 2 - 50, H // 3 + (j - 3) * 70 - 10, 150, 40)
+        )
     for j in range(6, 9):  # Последние 3 уровня справа
         level_rects.append(pygame.Rect(W // 3 * 2, H // 3 + (j - 6) * 70 - 10, 150, 40))
     # Прямоугольник для кнопки "Назад"
@@ -931,13 +1049,17 @@ def level_menu():
                 mouse_clicked = True
 
         screen.fill((92, 148, 252))
-        draw_text('Выбор уровня', font_large, (255, 255, 255), screen, W // 2, H // 6)
+        draw_text("Выбор уровня", font_large, (255, 255, 255), screen, W // 2, H // 6)
 
         # Отрисовка уровней и обработка кликов
         for j, opt in enumerate(options):
             is_hovered = level_rects[j].collidepoint(mouse_pos)
             color = (255, 255, 255) if is_hovered else (0, 0, 0)
-            x_pos = W // 3 - 100 if j < 3 else (W // 2 if (3 <= j < 6) else W // 3 * 2 + 100)
+            x_pos = (
+                W // 3 - 100
+                if j < 3
+                else (W // 2 if (3 <= j < 6) else W // 3 * 2 + 100)
+            )
             draw_text(opt, font_small, color, screen, x_pos, H // 3 + 20 + (j % 3) * 70)
 
             if is_hovered and mouse_clicked:
@@ -952,7 +1074,7 @@ def level_menu():
         # Кнопка "Назад"
         back_hovered = back_rect.collidepoint(mouse_pos)
         back_color = (255, 255, 255) if back_hovered else (0, 0, 0)
-        draw_text('Главное меню', font_small, back_color, screen, W // 2, H - 50)
+        draw_text("Главное меню", font_small, back_color, screen, W // 2, H - 50)
 
         if back_hovered and mouse_clicked:
             main_menu()
@@ -961,14 +1083,22 @@ def level_menu():
         pygame.display.flip()
         clock.tick(60)
 
+
 def upgrade():
-    global music_playing, from_menu, from_level, player_points, player
+    global music_playing, from_menu, from_level, player_points, player, unlock_message, \
+        unlock_message_time
     load_upgrades(player)
     # Создаем прямоугольники для кликабельных областей уровней
     pluses = []
     minuses = []
-    options = ['Атака', 'HP', 'Бег', 'Двойной прыжок', 'Щит']
-    upgrade_chars = [player.attack, player.HP, player.running_unlocked, player.double_jump_unlocked, player.shield]
+    options = ["Атака", "HP", "Бег", "Двойной прыжок", "Щит"]
+    upgrade_chars = [
+        player.attack,
+        player.HP,
+        player.running_unlocked,
+        player.double_jump_unlocked,
+        player.shield,
+    ]
     upgrading = True
     for j in range(5):
         if j != 2 and j != 3:
@@ -994,7 +1124,7 @@ def upgrade():
                 mouse_clicked = True
 
         screen.fill((92, 148, 252))
-        draw_text('Улучшение', font_large, (255, 255, 255), screen, W // 2, H // 6)
+        draw_text("Улучшение", font_large, (255, 255, 255), screen, W // 2, H // 6)
 
         # Отрисовка уровней и обработка кликов
         for j, opt in enumerate(options):
@@ -1005,18 +1135,67 @@ def upgrade():
             x_pos = W // 3 - 100
             draw_text(opt, font_small, (0, 0, 0), screen, x_pos, H // 3 + 20 + j * 70)
             if j != 2 and j != 3:
-                draw_text('+', font_medium, color_pluses, screen, W // 3 + 60, H // 3 + 20 + j * 70)
-                draw_text('/', font_medium, (0, 0, 0), screen, W // 3 + 100, H // 3 + 20 + j * 70)
-                draw_text('-', font_medium, color_minuses, screen, W // 3 + 140, H // 3 + 20 + j * 70)
+                draw_text(
+                    "+",
+                    font_medium,
+                    color_pluses,
+                    screen,
+                    W // 3 + 60,
+                    H // 3 + 20 + j * 70,
+                )
+                draw_text(
+                    "/",
+                    font_medium,
+                    (0, 0, 0),
+                    screen,
+                    W // 3 + 100,
+                    H // 3 + 20 + j * 70,
+                )
+                draw_text(
+                    "-",
+                    font_medium,
+                    color_minuses,
+                    screen,
+                    W // 3 + 140,
+                    H // 3 + 20 + j * 70,
+                )
             else:
-                draw_text('+', font_medium, color_pluses, screen, W // 3 + 100, H // 3 + 20 + j * 70)
-            if opt == 'Бег' or opt == 'Двойной прыжок':
+                draw_text(
+                    "+",
+                    font_medium,
+                    color_pluses,
+                    screen,
+                    W // 3 + 100,
+                    H // 3 + 20 + j * 70,
+                )
+            if opt == "Бег" or opt == "Двойной прыжок":
                 if upgrade_chars[j]:
-                    draw_text('Открыт', font_medium, (0, 0, 0), screen, W // 3 + 250, H // 3 + 20 + j * 70)
+                    draw_text(
+                        "Открыт",
+                        font_medium,
+                        (0, 0, 0),
+                        screen,
+                        W // 3 + 250,
+                        H // 3 + 20 + j * 70,
+                    )
                 else:
-                    draw_text('Закрыт', font_medium, (0, 0, 0), screen, W // 3 + 250, H // 3 + 20 + j * 70)
+                    draw_text(
+                        "Закрыт",
+                        font_medium,
+                        (0, 0, 0),
+                        screen,
+                        W // 3 + 250,
+                        H // 3 + 20 + j * 70,
+                    )
             else:
-                draw_text(str(upgrade_chars[j]), font_medium, (0, 0, 0), screen, W // 3 + 250, H // 3 + 20 + j * 70)
+                draw_text(
+                    str(upgrade_chars[j]),
+                    font_medium,
+                    (0, 0, 0),
+                    screen,
+                    W // 3 + 250,
+                    H // 3 + 20 + j * 70,
+                )
 
             if is_hovered_pluses and mouse_clicked:
                 if j == 0 and player_points >= 1:
@@ -1028,10 +1207,16 @@ def upgrade():
                     player.HP += 1
                     player_points -= 1
                 elif j == 2 and player_points >= 3 and not player.running_unlocked:
+                    Unlock_skin_sound.play()
+                    unlock_message = "Открылся скин: Соник"
+                    unlock_message_time = pygame.time.get_ticks()
                     upgrade_chars[j] = True
                     player.running_unlocked = True
                     player_points -= 3
                 elif j == 3 and player_points >= 4 and not player.double_jump_unlocked:
+                    Unlock_skin_sound.play()
+                    unlock_message = "Открылся скин: Марио"
+                    unlock_message_time = pygame.time.get_ticks()
                     upgrade_chars[j] = True
                     player.double_jump_unlocked = True
                     player_points -= 4
@@ -1055,27 +1240,49 @@ def upgrade():
                 save_upgrades(player)
                 load_upgrades(player)
 
+        if unlock_message:
+            current_time = pygame.time.get_ticks()
+            if current_time - unlock_message_time < UNLOCK_MESSAGE_DURATION:
+                # Нарисовать прямоугольник с текстом
+                message_surface = pygame.Surface((400, 50))
+                message_surface.fill((255, 255, 255))
+                pygame.draw.rect(message_surface, (0, 0, 0), message_surface.get_rect(), 2)
+                # Отрисовка текста
+                draw_text(unlock_message,font_small,(0, 0, 0),message_surface,200,25)
+                # Разместить поверх экрана по центру
+                screen.blit(
+                    message_surface,
+                    (W // 2 - 200, H // 2 - 25)
+                )
+            else:
+                unlock_message = None  # Сбросить сообщение после времени
+
         # Кнопка "Назад"
         back_hovered = back_rect.collidepoint(mouse_pos)
         back_color = (255, 255, 255) if back_hovered else (0, 0, 0)
-        draw_text('Главное меню', font_small, back_color, screen, W // 2, H - 50)
+        draw_text("Главное меню", font_small, back_color, screen, W // 2, H - 50)
 
         if back_hovered and mouse_clicked:
             save_upgrades(player)
             main_menu()
             upgrading = False
-        draw_text(f'Очки: {player_points}', font_small, (255, 255, 255), screen, W - 100, 50)
+        draw_text(
+            f"Очки: {player_points}", font_small, (255, 255, 255), screen, W - 100, 50
+        )
         pygame.display.flip()
         clock.tick(60)
+
 
 level_part_1 = True
 HP = player.HP
 Shield = player.shield
 
-#Первая часть уровня
+# Первая часть уровня
 def level_1_part_1():
     global level_part_1, level_1_part_1_scroll_pos, level_1_part_1_in, menu, playing_level, playing_menu, score
-    portal_rect = portal_image.get_rect(center=(level_1_part_1_WIDTH - 200, H - GROUND_H - 45))
+    portal_rect = portal_image.get_rect(
+        center=(level_1_part_1_WIDTH - 200, H - GROUND_H - 45)
+    )
     save_message_displayed = False
     save_message_timer = 0
     paused = False
@@ -1108,7 +1315,11 @@ def level_1_part_1():
                     save_message_timer = now
                 elif event.key == pygame.K_ESCAPE:
                     pause()
-                if event.key == pygame.K_w or event.key == pygame.K_UP and player.double_jump_unlocked:
+                if (
+                    event.key == pygame.K_w
+                    or event.key == pygame.K_UP
+                    and player.double_jump_unlocked
+                ):
                     player.handle_jump()
 
         # Очищаем экран
@@ -1118,13 +1329,17 @@ def level_1_part_1():
         screen.blit(level_surface, (0, 0), (level_1_part_1_scroll_pos, 0, W, H))
 
         # Отрисовываем портал (с учетом скролла)
-        screen.blit(portal_image, (portal_rect.x - level_1_part_1_scroll_pos, portal_rect.y))
+        screen.blit(
+            portal_image, (portal_rect.x - level_1_part_1_scroll_pos, portal_rect.y)
+        )
 
         # Отрисовываем игрока (всегда в центре экрана)
         player.draw(screen)
 
         if save_message_displayed and now - save_message_timer < 2000:
-            draw_text("Игра сохранена", font_small, (255, 255, 255), screen, W // 2, H // 2)
+            draw_text(
+                "Игра сохранена", font_small, (255, 255, 255), screen, W // 2, H // 2
+            )
 
         if not paused:
             # Обработка ввода и движение
@@ -1132,7 +1347,10 @@ def level_1_part_1():
             player.update()
             keys = pygame.key.get_pressed()
             # Обновляем скролл на основе движения игрока
-            if player.rect.centerx > W // 2 and level_1_part_1_scroll_pos < level_1_part_1_WIDTH - W:
+            if (
+                player.rect.centerx > W // 2
+                and level_1_part_1_scroll_pos < level_1_part_1_WIDTH - W
+            ):
                 # Игрок движется вправо - скроллим фон
                 scroll_amount = player.rect.centerx - W // 2
                 scroll_speed = 5  # Скорость скролла
@@ -1157,12 +1375,14 @@ def level_1_part_1():
                 player.is_grounded = True
 
             # Проверка коллизии с порталом
-            if player.rect.colliderect(pygame.Rect(
+            if player.rect.colliderect(
+                pygame.Rect(
                     portal_rect.x - level_1_part_1_scroll_pos,
                     portal_rect.y,
                     portal_rect.width,
-                    portal_rect.height
-            )):
+                    portal_rect.height,
+                )
+            ):
                 level_1_part_1_scroll_pos = 3200
                 save_game(player, score)
                 level_part_1 = False
@@ -1179,10 +1399,10 @@ def level_1_part_1():
         pygame.display.flip()
         clock.tick(FPS)
 
-#Вторая часть уровня
+
+# Вторая часть уровня
 def level_1_part_2():
-    global monsters, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, player_points, HP, from_level, from_menu, \
-        playing_menu, Shield
+    global monsters, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, player_points, HP, from_level, from_menu, playing_menu, Shield
     load_upgrades(player)
     HP = player.HP
     Shield = player.shield
@@ -1245,7 +1465,9 @@ def level_1_part_2():
 
         draw_text(str(score), font_large, (255, 255, 255), screen, W // 2, 20)
         draw_text(f"HP: {HP}", font_large, (255, 255, 255), screen, W // 3, 20)
-        draw_text(f"Shields: {Shield}", font_large, (255, 255, 255), screen, W // 3 * 2, 20)
+        draw_text(
+            f"Shields: {Shield}", font_large, (255, 255, 255), screen, W // 3 * 2, 20
+        )
 
         if score >= 10:
             # Убиваем всех монстров
@@ -1280,14 +1502,28 @@ def level_1_part_2():
                 player.draw(screen)
                 draw_text(str(score), font_large, (255, 255, 255), screen, W // 2, 20)
                 draw_text(f"HP: {HP}", font_large, (255, 255, 255), screen, W // 3, 20)
-                draw_text("Уровень пройден!", font_small, (255, 255, 255), screen, W // 2, H // 2)
-                draw_text(f"Shields: {Shield}", font_large, (255, 255, 255), screen, W // 3 * 2, 20)
+                draw_text(
+                    "Уровень пройден!",
+                    font_small,
+                    (255, 255, 255),
+                    screen,
+                    W // 2,
+                    H // 2,
+                )
+                draw_text(
+                    f"Shields: {Shield}",
+                    font_large,
+                    (255, 255, 255),
+                    screen,
+                    W // 3 * 2,
+                    20,
+                )
                 pygame.mixer.music.pause()
                 pygame.display.flip()
                 clock.tick(FPS)
 
             # Очищаем сохранение и выходим
-            with open('Save_files/last.json', 'w'):
+            with open("Save_files/last.json", "w"):
                 pass
             pygame.time.wait(2000)
             player_points += 3
@@ -1299,10 +1535,14 @@ def level_1_part_2():
             level_menu()
 
         if save_message_displayed and now - save_message_timer < 2000:
-            draw_text("Игра сохранена", font_small, (255, 255, 255), screen, W // 2, H // 2)
+            draw_text(
+                "Игра сохранена", font_small, (255, 255, 255), screen, W // 2, H // 2
+            )
 
         if player.is_out:
-            draw_text("PRESS ANY KEY", font_small, (255, 255, 255), screen, W // 2, H // 2)
+            draw_text(
+                "PRESS ANY KEY", font_small, (255, 255, 255), screen, W // 2, H // 2
+            )
         else:
             if not paused:
                 player.handle_input()
@@ -1318,10 +1558,16 @@ def level_1_part_2():
                     else:
                         monster.update()
 
-                        if player.rect.colliderect(monster.rect) and not monster.is_dead:
-                            if (player.rect.bottom < monster.rect.centery and
-                                    player.y_speed > 0 and
-                                    abs(player.rect.centerx - monster.rect.centerx) < monster.rect.width / 2):
+                        if (
+                            player.rect.colliderect(monster.rect)
+                            and not monster.is_dead
+                        ):
+                            if (
+                                player.rect.bottom < monster.rect.centery
+                                and player.y_speed > 0
+                                and abs(player.rect.centerx - monster.rect.centerx)
+                                < monster.rect.width / 2
+                            ):
                                 monster.kill()
                                 player.y_speed -= 15
                                 player.is_grounded = False
@@ -1341,7 +1587,9 @@ def level_1_part_2():
                                     player.damaged()
                                     monster.damage_given = True
                                     invincible = True
-                                    invincible_end_time = now + 1000  # Устанавливаем время окончания
+                                    invincible_end_time = (
+                                        now + 1000
+                                    )  # Устанавливаем время окончания
                                     player.speed = 0
                                     pygame.time.set_timer(pygame.USEREVENT, 1000)
 
@@ -1353,9 +1601,12 @@ def level_1_part_2():
         pygame.display.flip()
         clock.tick(FPS)
 
+
 def level_2_part_1():
     global level_part_1, level_1_part_1_scroll_pos, level_2_part_1_in, menu, playing_level, playing_menu, score
-    portal_rect = portal_image.get_rect(center=(level_1_part_1_WIDTH - 200, H - GROUND_H - 45))
+    portal_rect = portal_image.get_rect(
+        center=(level_1_part_1_WIDTH - 200, H - GROUND_H - 45)
+    )
     save_message_displayed = False
     save_message_timer = 0
     paused = False
@@ -1388,7 +1639,11 @@ def level_2_part_1():
                     save_message_timer = now
                 elif event.key == pygame.K_ESCAPE:
                     pause()
-                if event.key == pygame.K_w or event.key == pygame.K_UP and player.double_jump_unlocked:
+                if (
+                    event.key == pygame.K_w
+                    or event.key == pygame.K_UP
+                    and player.double_jump_unlocked
+                ):
                     player.handle_jump()
 
         # Очищаем экран
@@ -1398,13 +1653,17 @@ def level_2_part_1():
         screen.blit(level_surface, (0, 0), (level_1_part_1_scroll_pos, 0, W, H))
 
         # Отрисовываем портал (с учетом скролла)
-        screen.blit(portal_image, (portal_rect.x - level_1_part_1_scroll_pos, portal_rect.y))
+        screen.blit(
+            portal_image, (portal_rect.x - level_1_part_1_scroll_pos, portal_rect.y)
+        )
 
         # Отрисовываем игрока (всегда в центре экрана)
         player.draw(screen)
 
         if save_message_displayed and now - save_message_timer < 2000:
-            draw_text("Игра сохранена", font_small, (255, 255, 255), screen, W // 2, H // 2)
+            draw_text(
+                "Игра сохранена", font_small, (255, 255, 255), screen, W // 2, H // 2
+            )
 
         if not paused:
             # Обработка ввода и движение
@@ -1412,7 +1671,10 @@ def level_2_part_1():
             player.update()
             keys = pygame.key.get_pressed()
             # Обновляем скролл на основе движения игрока
-            if player.rect.centerx > W // 2 and level_1_part_1_scroll_pos < level_1_part_1_WIDTH - W:
+            if (
+                player.rect.centerx > W // 2
+                and level_1_part_1_scroll_pos < level_1_part_1_WIDTH - W
+            ):
                 # Игрок движется вправо - скроллим фон
                 scroll_amount = player.rect.centerx - W // 2
                 scroll_speed = 5  # Скорость скролла
@@ -1437,12 +1699,14 @@ def level_2_part_1():
                 player.is_grounded = True
 
             # Проверка коллизии с порталом
-            if player.rect.colliderect(pygame.Rect(
+            if player.rect.colliderect(
+                pygame.Rect(
                     portal_rect.x - level_1_part_1_scroll_pos,
                     portal_rect.y,
                     portal_rect.width,
-                    portal_rect.height
-            )):
+                    portal_rect.height,
+                )
+            ):
                 level_1_part_1_scroll_pos = 3200
                 save_game(player, score)
                 level_part_1 = False
@@ -1459,10 +1723,10 @@ def level_2_part_1():
         pygame.display.flip()
         clock.tick(FPS)
 
-#Вторая часть уровня
+
+# Вторая часть уровня
 def level_2_part_2():
-    global monsters, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, player_points, HP, from_level, from_menu, \
-        playing_menu, Shield
+    global monsters, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, player_points, HP, from_level, from_menu, playing_menu, Shield
     load_upgrades(player)
     HP = player.HP
     Shield = player.shield
@@ -1525,7 +1789,9 @@ def level_2_part_2():
 
         draw_text(str(score), font_large, (255, 255, 255), screen, W // 2, 20)
         draw_text(f"HP: {HP}", font_large, (255, 255, 255), screen, W // 3, 20)
-        draw_text(f"Shields: {Shield}", font_large, (255, 255, 255), screen, W // 3 * 2, 20)
+        draw_text(
+            f"Shields: {Shield}", font_large, (255, 255, 255), screen, W // 3 * 2, 20
+        )
 
         if score >= 10:
             # Убиваем всех монстров
@@ -1560,14 +1826,28 @@ def level_2_part_2():
                 player.draw(screen)
                 draw_text(str(score), font_large, (255, 255, 255), screen, W // 2, 20)
                 draw_text(f"HP: {HP}", font_large, (255, 255, 255), screen, W // 3, 20)
-                draw_text("Уровень пройден!", font_small, (255, 255, 255), screen, W // 2, H // 2)
-                draw_text(f"Shields: {Shield}", font_large, (255, 255, 255), screen, W // 3 * 2, 20)
+                draw_text(
+                    "Уровень пройден!",
+                    font_small,
+                    (255, 255, 255),
+                    screen,
+                    W // 2,
+                    H // 2,
+                )
+                draw_text(
+                    f"Shields: {Shield}",
+                    font_large,
+                    (255, 255, 255),
+                    screen,
+                    W // 3 * 2,
+                    20,
+                )
                 pygame.mixer.music.pause()
                 pygame.display.flip()
                 clock.tick(FPS)
 
             # Очищаем сохранение и выходим
-            with open('Save_files/last.json', 'w'):
+            with open("Save_files/last.json", "w"):
                 pass
             pygame.time.wait(2000)
             player_points += 3
@@ -1579,10 +1859,14 @@ def level_2_part_2():
             level_menu()
 
         if save_message_displayed and now - save_message_timer < 2000:
-            draw_text("Игра сохранена", font_small, (255, 255, 255), screen, W // 2, H // 2)
+            draw_text(
+                "Игра сохранена", font_small, (255, 255, 255), screen, W // 2, H // 2
+            )
 
         if player.is_out:
-            draw_text("PRESS ANY KEY", font_small, (255, 255, 255), screen, W // 2, H // 2)
+            draw_text(
+                "PRESS ANY KEY", font_small, (255, 255, 255), screen, W // 2, H // 2
+            )
         else:
             if not paused:
                 player.handle_input()
@@ -1598,10 +1882,16 @@ def level_2_part_2():
                     else:
                         monster.update()
 
-                        if player.rect.colliderect(monster.rect) and not monster.is_dead:
-                            if (player.rect.bottom < monster.rect.centery and
-                                    player.y_speed > 0 and
-                                    abs(player.rect.centerx - monster.rect.centerx) < monster.rect.width / 2):
+                        if (
+                            player.rect.colliderect(monster.rect)
+                            and not monster.is_dead
+                        ):
+                            if (
+                                player.rect.bottom < monster.rect.centery
+                                and player.y_speed > 0
+                                and abs(player.rect.centerx - monster.rect.centerx)
+                                < monster.rect.width / 2
+                            ):
                                 monster.kill()
                                 player.y_speed -= 15
                                 player.is_grounded = False
@@ -1621,7 +1911,7 @@ def level_2_part_2():
                                     player.damaged()
                                     monster.damage_given = True
                                     invincible = True
-                                    invincible_end_time = now + 1000  # Устанавливаем время окончания
+                                    invincible_end_time = now + 1000 #Устанавливаем время окончания
                                     player.speed = 0
                                     pygame.time.set_timer(pygame.USEREVENT, 1000)
 
