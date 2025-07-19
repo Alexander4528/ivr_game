@@ -910,7 +910,7 @@ def settings():
         "Уровень сложности",
         "Музыка",
         "Звук",
-        "Режим",
+        "Фон",
         "Сброс прогресса",
         "Сохранить настройки",
         "Отменить",
@@ -921,7 +921,7 @@ def settings():
         pygame.Rect(W // 2 - 100, H // 3 - 50, 200, 40),  # "Уровень сложности"
         pygame.Rect(W // 2 - 100, H // 3, 200, 40),  # "Музыка"
         pygame.Rect(W // 2 - 100, H // 3 + 50, 200, 40), # "Звук"
-        pygame.Rect(W // 2 - 100, H // 3 + 100, 200, 40), # "Режим"
+        pygame.Rect(W // 2 - 100, H // 3 + 100, 200, 40), # "Фон"
         pygame.Rect(W // 2 - 100, H // 3 + 150, 200, 40), # "Сброс прогресса"
         pygame.Rect(W // 2 - 100, H // 3 + 200, 200, 40), # "Сохранить настройки"
         pygame.Rect(W // 2 - 100, H // 3 + 250, 200, 40), # "Отменить"
@@ -1023,10 +1023,10 @@ def settings():
                     W // 2,
                     H // 3 + (idx - 1) * 50,
                 )
-            elif options_settings[idx] == "Режим":
+            elif options_settings[idx] == "Фон":
                 status3 = "Тёмный" if dark_mode else "Светлый"
                 draw_text(
-                    f"Режим: {status3}",
+                    f"Фон: {status3}",
                     font_small,
                     color,
                     screen,
