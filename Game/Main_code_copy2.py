@@ -18,7 +18,8 @@ def init_db():
             music_on INTEGER,
             sound_on INTEGER,
             player_points INTEGER,
-            difficulty_level INTEGER
+            difficulty_level INTEGER,
+            dark_mode INTEGER
         )
     ''')
     # Таблица для прогресса
@@ -28,7 +29,8 @@ def init_db():
             player_pos INTEGER,
             score INTEGER,
             HP INTEGER,
-            shield INTEGER
+            shield INTEGER,
+            level INTEGER
         )
     ''')
     # Таблица для скинов
@@ -71,6 +73,8 @@ player_points = 0
 difficulty_level = 0
 dark_mode = False
 background_color = (62, 118, 222) if dark_mode else (92, 148, 252)
+dark_mode = False
+pending_mode = dark_mode
 
 # Игровые переменные
 monsters = []
@@ -83,6 +87,9 @@ menu = False
 level_1_part_1_in = False
 level_2_part_1_in = False
 levels_in = False
+Level1 = False
+Level2 = False
+level = 1
 
 # Переменные меню
 playing_menu = True
@@ -181,6 +188,46 @@ skins = [
         "img": surface_image,
     },
     {
+        "name": "Селена",
+        "unlocked": True,
+        "image": "Sprites and objects/Skins/Girlfriend/Girlfriend.png",
+        "walk_right": [
+            "Sprites and objects/Skins/Girlfriend/Girlfriend_right1.png",
+            "Sprites and objects/Skins/Girlfriend/Girlfriend_right2.png",
+            "Sprites and objects/Skins/Girlfriend/Girlfriend_right3.png",
+            "Sprites and objects/Skins/Girlfriend/Girlfriend_right4.png",
+        ],
+        "walk_left": [
+            "Sprites and objects/Skins/Girlfriend/Girlfriend_left1.png",
+            "Sprites and objects/Skins/Girlfriend/Girlfriend_left2.png",
+            "Sprites and objects/Skins/Girlfriend/Girlfriend_left3.png",
+            "Sprites and objects/Skins/Girlfriend/Girlfriend_left4.png",
+        ],
+        "damaged": "Sprites and objects/Skins/Girlfriend/Girlfriend_damaged.png",
+        "unlock": " ",
+        "img": surface_image,
+    },
+    {
+        "name": "Мона",
+        "unlocked": True,
+        "image": "Sprites and objects/Skins/Lost_girlfriend/Mona.png",
+        "walk_right": [
+            "Sprites and objects/Skins/Lost_girlfriend/Mona_right1.png",
+            "Sprites and objects/Skins/Lost_girlfriend/Mona_right2.png",
+            "Sprites and objects/Skins/Lost_girlfriend/Mona_right3.png",
+            "Sprites and objects/Skins/Lost_girlfriend/Mona_right4.png",
+        ],
+        "walk_left": [
+            "Sprites and objects/Skins/Lost_girlfriend/Mona_left1.png",
+            "Sprites and objects/Skins/Lost_girlfriend/Mona_left2.png",
+            "Sprites and objects/Skins/Lost_girlfriend/Mona_left3.png",
+            "Sprites and objects/Skins/Lost_girlfriend/Mona_left4.png",
+        ],
+        "damaged": "Sprites and objects/Skins/Lost_girlfriend/Mona_damaged.png",
+        "unlock": " ",
+        "img": surface_image,
+    },
+    {
         "name": "Соник",
         "unlocked": False,
         "image": "Sprites and objects/Skins/Sonic/Sonic.png",
@@ -254,7 +301,10 @@ skin_message_timer = 0
 for skin_number in skins:
     try:
         img = pygame.image.load(skin_number["image"])
-        skin_number["img"] = pygame.transform.scale(img, (40, 50))
+        if skin_number["name"] == "Селена" or skin_number["name"] == "Мона":
+            skin_number["img"] = pygame.transform.scale(img, (30, 55))
+        else:
+            skin_number["img"] = pygame.transform.scale(img, (40, 50))
     except:
         pass
 
@@ -266,27 +316,40 @@ def apply_skin(skin_index):
     skin = skins[skin_index]
     try:
         # Загружаем основное изображение
-        me_image = pygame.transform.scale(pygame.image.load(skin["image"]), (70, 80))
-
+        if skin["name"] == "Селена" or skin["name"] == "Мона":
+            me_image = pygame.transform.scale(pygame.image.load(skin["image"]), (50, 80))
+        else:
+            me_image = pygame.transform.scale(pygame.image.load(skin["image"]), (70, 80))
         # Загружаем анимации
-        if skin.get("walk_right", []):
+        if skin.get("walk_right", []) and skin["name"] != "Селена" and skin["name"] != "Мона":
             running_sprites_right = [
                 pygame.transform.scale(pygame.image.load(fname), (70, 80))
                 for fname in skin["walk_right"]
             ]
+        elif skin.get("walk_right", []) and (skin["name"] == "Селена" or skin["name"] == "Мона"):
+            running_sprites_right = [
+                pygame.transform.scale(pygame.image.load(fname), (50, 80))
+                for fname in skin["walk_right"]
+            ]
         else:
             running_sprites_right = [me_image] * 4
-        if skin.get("walk_left", []):
+        if skin.get("walk_left", []) and skin["name"] != "Селена" and skin["name"] != "Мона":
             running_sprites_left = [
                 pygame.transform.scale(pygame.image.load(fname), (70, 80))
+                for fname in skin["walk_left"]
+            ]
+        elif skin.get("walk_left", []) and (skin["name"] == "Селена" or skin["name"] == "Мона"):
+            running_sprites_left = [
+                pygame.transform.scale(pygame.image.load(fname), (50, 80))
                 for fname in skin["walk_left"]
             ]
         else:
             running_sprites_left = [me_image] * 4
         if skin.get("damaged", []):
-            me_damaged_image = pygame.transform.scale(
-                pygame.image.load(skin["damaged"]), (70, 80)
-            )
+            if skin["name"] == "Селена" or skin["name"] == "Мона":
+                me_damaged_image = pygame.transform.scale(pygame.image.load(skin["damaged"]), (50, 80))
+            else:
+                me_damaged_image = pygame.transform.scale(pygame.image.load(skin["damaged"]), (70, 80))
         else:
             me_damaged_image = me_image
     except Exception as e:
@@ -298,48 +361,56 @@ def apply_skin(skin_index):
 
 # Сохранение настроек
 def save_settings_sql():
-    global music_on, sound_on, player_points, difficulty_level
+    global music_on, sound_on, player_points, difficulty_level, dark_mode
     cursor = saving.cursor()
     cursor.execute('DELETE FROM settings')
-    cursor.execute('INSERT INTO settings (music_on, sound_on, player_points, difficulty_level) VALUES (?, ?, ?, ?)',
-                   (int(music_on), int(sound_on), player_points, difficulty_level))
+    cursor.execute('INSERT INTO settings (music_on, sound_on, player_points, difficulty_level, dark_mode) '
+                   'VALUES (?, ?, ?, ?, ?)',
+                   (int(music_on), int(sound_on), player_points, difficulty_level, int(dark_mode)))
     saving.commit()
 
 # Загрузка настроек
 def load_settings_sql():
-    global music_on, sound_on, player_points, difficulty_level
+    global music_on, sound_on, player_points, difficulty_level, dark_mode, background_color, pending_mode
     cursor = saving.cursor()
-    cursor.execute('SELECT music_on, sound_on, player_points, difficulty_level FROM settings LIMIT 1')
+    cursor.execute('SELECT music_on, sound_on, player_points, difficulty_level, dark_mode FROM settings LIMIT 1')
     row = cursor.fetchone()
     if row:
         music_on = bool(row[0])
         sound_on = bool(row[1])
         player_points = row[2]
         difficulty_level = row[3]
+        dark_mode = bool(row[4])
+        background_color = (62, 118, 222) if dark_mode else (92, 148, 252)
+        pending_mode = dark_mode
 
 # Сохранение игры
-def save_game_sql():
-    global level_1_part_1_scroll_pos, score, player
+def save_game_sql(level_number):
+    global level_1_part_1_scroll_pos, score, player, level
+    level = level_number
     cursor = saving.cursor()
     cursor.execute('DELETE FROM game_progress')
-    cursor.execute('INSERT INTO game_progress (player_pos, score, HP, shield) VALUES (?, ?, ?, ?)',
-                   (level_1_part_1_scroll_pos, score, player.HP, player.shield))
+    cursor.execute('INSERT INTO game_progress (player_pos, score, HP, shield, level) VALUES (?, ?, ?, ?, ?)',
+                   (level_1_part_1_scroll_pos, score, player.HP, player.shield, level_number))
     saving.commit()
 
 # Загрузка последнего сохранения
 def load_game_sql():
-    global level_1_part_1_scroll_pos, score, player
+    global level_1_part_1_scroll_pos, score, player, level
     cursor = saving.cursor()
-    cursor.execute('SELECT player_pos, score, HP, shield FROM game_progress LIMIT 1')
+    cursor.execute('SELECT player_pos, score, HP, shield, level FROM game_progress LIMIT 1')
     row = cursor.fetchone()
     if row:
         level_1_part_1_scroll_pos = row[0]
         score = row[1]
         player.HP = row[2]
         player.shield = row[3]
+        level = row[4]
     else:
         level_1_part_1_scroll_pos = 0
         score = 0
+        level = 1
+    return level
 
 # Сохранение скина
 def save_skin():
@@ -665,10 +736,16 @@ class Player:
 # Характеристика и функции врагов
 class Monster:
     def __init__(self):
+        global Level1, Level2
         try:
-            self.image = pygame.transform.scale(
-                pygame.image.load("Sprites and objects/Enemies/Enemy.png"), (90, 90)
-            )
+            if Level1:
+                self.image = pygame.transform.scale(
+                    pygame.image.load("Sprites and objects/Enemies/Common/Enemy.png"), (90, 90)
+                )
+            elif Level2:
+                self.image = pygame.transform.scale(
+                    pygame.image.load("Sprites and objects/Enemies/Speed/Speed_enemy_right.png"), (120, 90)
+                )
         except:
             self.image = pygame.Surface((90, 90))
         self.rect = self.image.get_rect()
@@ -685,32 +762,42 @@ class Monster:
         self.spawn()
 
     def spawn(self):
+        global Level1, Level2
         direction = random.randint(0, 1)
         if direction == 0:
             self.x_speed = self.speed
             self.rect.bottomright = (0, 0)
             try:
-                self.image = pygame.transform.scale(
-                    pygame.image.load("Sprites and objects/Enemies/Enemy-left.png"),
-                    (90, 90),
-                )
+                if Level1:
+                    self.image = pygame.transform.scale(
+                        pygame.image.load("Sprites and objects/Enemies/Common/Enemy-left.png"),(90, 90))
+                elif Level2:
+                    self.image = pygame.transform.scale(
+                        pygame.image.load("Sprites and objects/Enemies/Speed/Speed_enemy.png"), (120, 90))
             except:
                 self.image = pygame.Surface((90, 90))
         else:
             self.x_speed = -self.speed
             self.rect.bottomright = (W, 0)
             try:
-                self.image = pygame.transform.scale(
-                    pygame.image.load("Sprites and objects/Enemies/Enemy.png"), (90, 90)
-                )
+                if Level1:
+                    self.image = pygame.transform.scale(
+                        pygame.image.load("Sprites and objects/Enemies/Common/Enemy.png"), (90, 90))
+                elif Level2:
+                    self.image = pygame.transform.scale(
+                        pygame.image.load("Sprites and objects/Enemies/Speed/Speed_enemy_right.png"), (120, 90))
             except:
                 self.image = pygame.Surface((90, 90))
 
     def kill(self):
+        global Level1, Level2
         try:
-            self.image = pygame.transform.scale(
-                pygame.image.load("Sprites and objects/Enemies/EnemyDead.png"), (90, 90)
-            )
+            if Level1:
+                self.image = pygame.transform.scale(
+                    pygame.image.load("Sprites and objects/Enemies/Common/EnemyDead.png"), (90, 90))
+            elif Level2:
+                self.image = pygame.transform.scale(
+                    pygame.image.load("Sprites and objects/Enemies/Speed/Speed_enemy_dead.png"), (120, 90))
         except:
             self.image = pygame.Surface((90, 90))
         self.is_dead = True
@@ -820,10 +907,11 @@ def skin_menu():
         if skin["name"] == "Марио":
             if player.double_jump_unlocked:
                 skin["unlocked"] = True
-    # Создаем список прямоугольников для кликабельных областей
+
+    # Создаем список прямоугольников для областей клика
     skin_rects = []
     for idx in range(len(skins)):
-        skin_rects.append(pygame.Rect(W // 2 - 150, H // 4 + idx * 60 - 20, 300, 40))
+        skin_rects.append(pygame.Rect(W // 2 - 400 if idx < 4 else W // 2 + 50, H // 4 + idx % 4 * 60 - 20, 200, 40))
     load_upgrades()
     load_skin()
     # Прямоугольник для кнопки "Назад"
@@ -854,20 +942,21 @@ def skin_menu():
 
         # Отрисовка скинов и обработка кликов
         for idx, skin in enumerate(skins):
-            y_pos = H // 4 + idx * 60
+            y_pos = H // 4 + idx % 4 * 60
+            x_pos = W // 2 - 250 if idx < 4 else W // 2 + 200
             is_hovered = skin_rects[idx].collidepoint(mouse_pos)
             is_selected = idx == current_skin_index
             color = (255, 255, 255) if (is_hovered or is_selected) else (0, 0, 0)
 
-            draw_text(skin["name"], font_small, color, screen, W // 2, y_pos)
+            draw_text(skin["name"], font_small, color, screen, x_pos, y_pos)
 
             if "img" in skin:
                 img_surface = skin["img"]
                 if isinstance(img_surface, pygame.Surface):
-                    img_rect = img_surface.get_rect(center=(W // 2 - 120, y_pos))
+                    img_rect = img_surface.get_rect(center=(x_pos - 120, y_pos))
                     screen.blit(img_surface, img_rect)
             status = "Открыт" if skin["unlocked"] else "Закрыт"
-            draw_text(status, font_small, color, screen, W // 2 + 150, y_pos)
+            draw_text(status, font_small, color, screen, x_pos + 150, y_pos)
 
             if is_hovered and mouse_clicked and skin["unlocked"]:
                 current_skin_index = idx
@@ -877,7 +966,7 @@ def skin_menu():
                 player.idle_sprite = me_image
                 player.image = player.idle_sprite
                 player.damaged_sprite = me_damaged_image
-                save_game_sql()
+                save_game_sql(level)
                 save_skin()
 
             if is_hovered and not skin["unlocked"]:
@@ -887,7 +976,7 @@ def skin_menu():
                     (255, 255, 255),
                     screen,
                     W // 2,
-                    H // 2 + 130,
+                    H // 3 * 2 + 130,
                 )
 
         # Кнопка "Назад"
@@ -904,7 +993,7 @@ def skin_menu():
 
 def settings():
     global music_on, sound_on, player_points, difficulty_level, level1_cleared, level2_cleared, dark_mode, \
-        background_color
+        background_color, pending_mode
     load_upgrades()
     options_settings = [
         "Уровень сложности",
@@ -953,8 +1042,8 @@ def settings():
                         elif selected_idx == 2:
                             toggle_sound()
                         elif selected_idx == 3:
-                            dark_mode = not dark_mode
-                            background_color = (62, 118, 222) if dark_mode else (92, 148, 252)
+                            pending_mode = not pending_mode
+                            background_color = (62, 118, 222) if pending_mode else (92, 148, 252)
                         elif selected_idx == 4:
                             cursor = saving.cursor()
                             cursor.execute('DELETE FROM game_progress')
@@ -969,8 +1058,10 @@ def settings():
                         elif selected_idx == 5:
                             player_points = temp_points
                             difficulty_level = temp_difficulty
+                            dark_mode = pending_mode
+                            background_color = (62, 118, 222) if dark_mode else (92, 148, 252)
                             save_settings_sql()
-                            save_game_sql()
+                            save_game_sql(level)
                             save_skin()
                             if music_on:
                                 pygame.mixer.music.unpause()
@@ -979,8 +1070,9 @@ def settings():
                         elif selected_idx == 6:
                             temp_difficulty = 0
                             save_settings_sql()
-                            save_game_sql()
+                            save_game_sql(level)
                             dark_mode = False
+                            pending_mode = dark_mode
                             background_color = (62, 118, 222) if dark_mode else (92, 148, 252)
                             if not music_on:
                                 toggle_music()
@@ -1024,7 +1116,7 @@ def settings():
                     H // 3 + (idx - 1) * 50,
                 )
             elif options_settings[idx] == "Фон":
-                status3 = "Тёмный" if dark_mode else "Светлый"
+                status3 = "Тёмный" if pending_mode else "Светлый"
                 draw_text(
                     f"Фон: {status3}",
                     font_small,
@@ -1299,24 +1391,24 @@ def upgrade():
 
             if is_hovered_pluses and mouse_clicked:
                 if j == 0:
-                    if player_points >= 1:
+                    if player_points >= 1 and player.attack < 4:
                         if sound_on:
                             Unlock_skin_sound.play()
                         upgrade_chars[j] += 1
                         player.attack += 1
                         player_points -= 1
                     elif player_points < 1:
-                        unlock_message = "Недостаточно очков"
+                        unlock_message = "Недостаточно очков (минимум 1)"
                         unlock_message_time = pygame.time.get_ticks()
                 elif j == 1:
-                    if player_points >= 1:
+                    if player_points >= 1 and player.HP < 10:
                         if sound_on:
                             Unlock_skin_sound.play()
                         upgrade_chars[j] += 1
                         player.HP += 1
                         player_points -= 1
                     elif player_points < 1:
-                        unlock_message = "Недостаточно очков"
+                        unlock_message = "Недостаточно очков (минимум 1)"
                         unlock_message_time = pygame.time.get_ticks()
                 elif j == 2 and not player.running_unlocked:
                     if player_points >= 3:
@@ -1328,7 +1420,7 @@ def upgrade():
                         player.running_unlocked = True
                         player_points -= 3
                     elif player_points < 3:
-                        unlock_message = "Недостаточно очков"
+                        unlock_message = "Нужно минимум 3 очка"
                         unlock_message_time = pygame.time.get_ticks()
                 elif j == 3 and not player.double_jump_unlocked:
                     if player_points >= 4:
@@ -1340,7 +1432,7 @@ def upgrade():
                         player.double_jump_unlocked = True
                         player_points -= 4
                     elif player_points < 4:
-                        unlock_message = "Недостаточно очков"
+                        unlock_message = "Нужно минимум 4 очка"
                         unlock_message_time = pygame.time.get_ticks()
                 elif j == 4:
                     if player_points >= 3:
@@ -1350,7 +1442,7 @@ def upgrade():
                         player.shield += 1
                         player_points -= 3
                     elif player_points < 3:
-                        unlock_message = "Недостаточно очков"
+                        unlock_message = "Нужно минимум 3 очка"
                         unlock_message_time = pygame.time.get_ticks()
                 save_upgrades()
             if is_hovered_minuses and mouse_clicked and j != 2 and j != 3:
@@ -1413,7 +1505,7 @@ Shield = player.shield
 
 # Первая часть уровня
 def level_1_part_1():
-    global level_part_1, level_1_part_1_scroll_pos, level_1_part_1_in, menu, playing_level, playing_menu, score
+    global level_part_1, level_1_part_1_scroll_pos, level_1_part_1_in, menu, playing_level, playing_menu, score, level
     portal_rect = portal_image.get_rect(
         center=(level_1_part_1_WIDTH - 200, H - GROUND_H - 45)
     )
@@ -1430,7 +1522,9 @@ def level_1_part_1():
     # Создаем большую поверхность для уровня
     level_surface = pygame.Surface((level_1_part_1_WIDTH, H))
     level_surface.fill((92, 148, 252))  # Основной фон
-    load_game_sql()
+    level = load_game_sql()
+    if level != 1:
+        level_1_part_1_scroll_pos = 0
     # Рисуем землю
     for x in range(0, level_1_part_1_WIDTH, ground_image.get_width()):
         level_surface.blit(ground_image, (x, H - GROUND_H))
@@ -1443,7 +1537,8 @@ def level_1_part_1():
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s:
-                    save_game_sql()
+                    level = 1
+                    save_game_sql(level)
                     save_message_displayed = True
                     save_message_timer = now
                 elif event.key == pygame.K_ESCAPE:
@@ -1517,7 +1612,8 @@ def level_1_part_1():
                 )
             ):
                 level_1_part_1_scroll_pos = 3200
-                save_game_sql()
+                level = 1
+                save_game_sql(level)
                 level_part_1 = False
                 level_1_part_2()
                 return
@@ -1536,7 +1632,7 @@ def level_1_part_1():
 # Вторая часть уровня
 def level_1_part_2():
     global monsters, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, player_points, \
-        HP, from_level, from_menu, playing_menu, Shield, level1_cleared, level2_cleared
+        HP, from_level, from_menu, playing_menu, Shield, level1_cleared, level2_cleared, Level1, level
     load_upgrades()
     HP = player.HP
     Shield = player.shield
@@ -1550,15 +1646,15 @@ def level_1_part_2():
     save_message_displayed = False
     save_message_timer = 0
     paused = False
-    running = True
+    Level1 = True
     invincible = False
     invincible_end_time = 0
 
-    while running:
+    while Level1:
         now = pygame.time.get_ticks()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                Level1 = False
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.USEREVENT:
@@ -1569,7 +1665,8 @@ def level_1_part_2():
                     player.can_jump = True
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s:
-                    save_game_sql()
+                    level = 1
+                    save_game_sql(level)
                     save_message_displayed = True
                     save_message_timer = now
                 elif event.key == pygame.K_ESCAPE:
@@ -1748,7 +1845,7 @@ def level_1_part_2():
 
 
 def level_2_part_1():
-    global level_part_1, level_1_part_1_scroll_pos, level_2_part_1_in, menu, playing_level, playing_menu, score
+    global level_part_1, level_1_part_1_scroll_pos, level_2_part_1_in, menu, playing_level, playing_menu, score, level
     portal_rect = portal_image.get_rect(
         center=(level_1_part_1_WIDTH - 200, H - GROUND_H - 45)
     )
@@ -1765,7 +1862,9 @@ def level_2_part_1():
     # Создаем большую поверхность для уровня
     level_surface = pygame.Surface((level_1_part_1_WIDTH, H))
     level_surface.fill((92, 148, 252))  # Основной фон
-    load_game_sql()
+    level = load_game_sql()
+    if level != 2:
+        level_1_part_1_scroll_pos = 0
     # Рисуем землю
     for x in range(0, level_1_part_1_WIDTH, ground_image.get_width()):
         level_surface.blit(ground_image, (x, H - GROUND_H))
@@ -1779,7 +1878,8 @@ def level_2_part_1():
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s:
-                    save_game_sql()
+                    level = 2
+                    save_game_sql(level)
                     save_message_displayed = True
                     save_message_timer = now
                 elif event.key == pygame.K_ESCAPE:
@@ -1853,7 +1953,8 @@ def level_2_part_1():
                 )
             ):
                 level_1_part_1_scroll_pos = 3200
-                save_game_sql()
+                level = 2
+                save_game_sql(level)
                 level_part_1 = False
                 level_2_part_2()
                 return
@@ -1872,29 +1973,28 @@ def level_2_part_1():
 # Вторая часть уровня
 def level_2_part_2():
     global monsters, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, player_points, HP, \
-        from_level, from_menu, playing_menu, Shield, level2_cleared, level1_cleared
+        from_level, from_menu, playing_menu, Shield, level2_cleared, level1_cleared, Level2, level
     load_upgrades()
     HP = player.HP
     Shield = player.shield
     # Обнуляем список врагов и таймеры при входе
     monsters = []
     last_spawn_time = pygame.time.get_ticks()
-
     # Остальной код уровня
     player.rect.midbottom = (W // 2, H - GROUND_H)
 
     save_message_displayed = False
     save_message_timer = 0
     paused = False
-    running = True
+    Level2 = True
     invincible = False
     invincible_end_time = 0
 
-    while running:
+    while Level2:
         now = pygame.time.get_ticks()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                Level2 = False
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.USEREVENT:
@@ -1905,7 +2005,8 @@ def level_2_part_2():
                     player.can_jump = True
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s:
-                    save_game_sql()
+                    level = 2
+                    save_game_sql(level)
                     save_message_displayed = True
                     save_message_timer = now
                 elif event.key == pygame.K_ESCAPE:
@@ -2047,7 +2148,7 @@ def level_2_part_2():
                                 player.rect.bottom < monster.rect.centery
                                 and player.y_speed > 0
                                 and abs(player.rect.centerx - monster.rect.centerx)
-                                < monster.rect.width / 2
+                                < monster.rect.width / 3 * 2
                             ):
                                 monster.kill()
                                 player.y_speed -= 15
