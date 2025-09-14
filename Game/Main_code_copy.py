@@ -20,7 +20,7 @@ difficulty_level = 0
 current_difficulty = 0
 dark_mode = False
 pending_mode = dark_mode
-background_image = (82, 138, 242) if dark_mode else (92, 148, 252)
+background_image = (42, 98, 202) if dark_mode else (92, 148, 252)
 
 # Игровые переменные
 monsters = []
@@ -928,6 +928,9 @@ class Monster:
             elif Level3:
                 self.running_sprites_enemy_right = running_sprites_enemy_right
                 self.running_sprites_enemy_left = running_sprites_enemy_left
+            elif Level4:
+                self.running_sprites_enemy_right = running_sprites_enemy_right
+                self.running_sprites_enemy_left = running_sprites_enemy_left
         except:
             self.image = pygame.Surface((90, 90))
         self.current_frame_index = 1
@@ -964,6 +967,9 @@ class Monster:
                 elif Level3:
                     self.image = pygame.transform.scale(
                         pygame.image.load("Sprites and objects/Enemies/Common/Goomba_left_1.png"), (90, 90))
+                elif Level4:
+                    self.image = pygame.transform.scale(
+                        pygame.image.load("Sprites and objects/Enemies/Common/Goomba_left_1.png"), (90, 90))
             except:
                 self.image = pygame.Surface((90, 90))
         else:
@@ -979,6 +985,9 @@ class Monster:
                 elif Level3:
                     self.image = pygame.transform.scale(
                         pygame.image.load("Sprites and objects/Enemies/Common/Goomba_right_1.png"), (90, 90))
+                elif Level4:
+                    self.image = pygame.transform.scale(
+                        pygame.image.load("Sprites and objects/Enemies/Common/Goomba_right_1.png"), (90, 90))
             except:
                 self.image = pygame.Surface((90, 90))
 
@@ -992,6 +1001,9 @@ class Monster:
                 self.image = pygame.transform.scale(
                     pygame.image.load("Sprites and objects/Enemies/Common/Goomba_dead.png"), (90, 28))
             elif Level3:
+                self.image = pygame.transform.scale(
+                    pygame.image.load("Sprites and objects/Enemies/Common/Goomba_dead.png"), (90, 28))
+            elif Level4:
                 self.image = pygame.transform.scale(
                     pygame.image.load("Sprites and objects/Enemies/Common/Goomba_dead.png"), (90, 28))
         except:
@@ -1032,15 +1044,9 @@ class Monster:
 
 class Boss:
     def __init__(self):
-        global Level1, Level2, Level3
+        global Level3
         try:
-            if Level1:
-                self.running_sprites_enemy_right = running_sprites_enemy_right
-                self.running_sprites_enemy_left = running_sprites_enemy_left
-            elif Level2:
-                self.running_sprites_enemy_right = running_sprites_enemy_right
-                self.running_sprites_enemy_left = running_sprites_enemy_left
-            elif Level3:
+            if Level3:
                 self.running_sprites_enemy_right = running_sprites_enemy_right
                 self.running_sprites_enemy_left = running_sprites_enemy_left
         except:
@@ -1068,7 +1074,7 @@ class Boss:
         self.HP = 100
 
     def spawn(self):
-        global Level1, Level2, Level3
+        global Level3
         self.rect.topleft = (W // 3 * 2, H - GROUND_H)  # сразу в позицию
         self.x_speed = 0
         self.y_speed = 0
@@ -1080,13 +1086,7 @@ class Boss:
 
         # Загружаем изображение в зависимости от направления
         try:
-            if Level1:
-                self.image = pygame.transform.scale(
-                    pygame.image.load("Sprites and objects/Enemies/Common/Goomba_left_1.png"), (90, 90))
-            elif Level2:
-                self.image = pygame.transform.scale(
-                    pygame.image.load("Sprites and objects/Enemies/Common/Goomba_left_1.png"), (90, 90))
-            elif Level3:
+            if Level3:
                 self.image = pygame.transform.scale(
                     pygame.image.load("Sprites and objects/Enemies/Common/Goomba_left_1.png"), (140, 140))
         except:
@@ -1134,15 +1134,9 @@ class Boss:
         self.image = me_damaged_image
 
     def kill(self):
-        global Level1, Level2, Level3
+        global Level3
         try:
-            if Level1:
-                self.image = pygame.transform.scale(
-                    pygame.image.load("Sprites and objects/Enemies/Common/Goomba_dead.png"),(90, 28))
-            elif Level2:
-                self.image = pygame.transform.scale(
-                    pygame.image.load("Sprites and objects/Enemies/Common/Goomba_dead.png"), (90, 28))
-            elif Level3:
+            if Level3:
                 self.image = pygame.transform.scale(
                     pygame.image.load("Sprites and objects/Enemies/Common/Goomba_dead.png"), (140, 38))
         except:
@@ -1160,6 +1154,7 @@ player = Player()
 # Главное меню
 def main_menu():
     global player, menu, levels_in, from_menu, from_level, current_skin_index, background_image
+    background_image = (42, 98, 202) if dark_mode else (92, 148, 252)
 
     load_settings_sql()
     menu = True
@@ -1379,7 +1374,7 @@ def settings():
                         toggle_sound()
                     elif selected_idx == 3:
                         pending_mode = not pending_mode
-                        background_image = (82, 138, 242) if pending_mode else (92, 148, 252)
+                        background_image = (42, 98, 202) if pending_mode else (92, 148, 252)
                     elif selected_idx == 4:
                         cursor = saving.cursor()
                         if difficulty_level == 0:
@@ -1416,14 +1411,14 @@ def settings():
                             player_points_hard = player_points_hard
                         if dark_mode != pending_mode:
                             dark_mode = pending_mode
-                        background_image = (82, 138, 242) if dark_mode else (92, 148, 252)
+                        background_image = (42, 98, 202) if dark_mode else (92, 148, 252)
                     elif selected_idx == 6:
                         temp_difficulty = 0
                         save_settings_sql()
                         save_game_sql(level)
                         dark_mode = False
                         pending_mode = dark_mode
-                        background_image = (82, 138, 242) if dark_mode else (92, 148, 252)
+                        background_image = (42, 98, 202) if dark_mode else (92, 148, 252)
                         if not music_on:
                             toggle_music()
                             if music_on:
@@ -1639,6 +1634,8 @@ def level_menu():
             if level2_cleared and j == 1:
                 color = (255, 255, 255) if is_selected else (0, 255, 0)
             if level3_cleared and j == 2:
+                color = (255, 255, 255) if is_selected else (0, 255, 0)
+            if level4_cleared and j == 3:
                 color = (255, 255, 255) if is_selected else (0, 255, 0)
             if j < 3:
                 x_pos = W // 3 - 100
@@ -2421,7 +2418,7 @@ def level_2_part_2():
                     (255, 255, 255),
                     screen,
                     W // 2,
-                    H // 2,
+                    H // 2 - 20,
                 )
                 draw_text(
                     f"Shields: {Shield}",
@@ -2705,7 +2702,7 @@ def level_3_part_2():
                     player.speed = 5
                     player.can_jump = True
                 if now >= invincible_end_time_boss:
-                    boss.image = boss_image
+                    boss[0].image = boss_image
                     invincible_boss = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s:
@@ -2874,7 +2871,6 @@ def level_3_part_2():
                                 and abs(player.rect.centerx - Boss_1.rect.centerx)
                                 < Boss_1.rect.width / 2
                             ):
-                                Boss_1.HP -= player.attack
                                 if Boss_1.HP > 0:
                                     print(f"Удар по боссу: HP до удара {Boss_1.HP}")
                                     Boss_1.HP -= player.attack
@@ -3029,7 +3025,7 @@ def level_4_part_1():
                 level = 4
                 save_game_sql(level)
                 level_part_1 = False
-                level_3_part_2()
+                level_4_part_2()
                 return
 
         # Индикатор прогресса

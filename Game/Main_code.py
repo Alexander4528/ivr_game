@@ -5,7 +5,6 @@ import sys
 import random
 from pygame import Surface
 
-
 pygame.init()
 
 # Настройки игры
@@ -21,10 +20,12 @@ difficulty_level = 0
 current_difficulty = 0
 dark_mode = False
 pending_mode = dark_mode
-background_image = (82, 138, 242) if dark_mode else (92, 148, 252)
+background_image = (42, 98, 202) if dark_mode else (92, 148, 252)
+
 
 # Игровые переменные
 monsters = []
+boss = []
 last_spawn_time = 0
 spawn_delay = 3000
 score = 0
@@ -65,18 +66,25 @@ surface_image = pygame.Surface((40, 50))
 
 # Загрузка изображений
 ground_image: Surface = pygame.image.load(
-    "Sprites and objects/Objects, background and other/ground.jpg"
+    "Sprites and objects/Objects, background and other/2d-Pixel-Grass.png"
 )
-ground_image = pygame.transform.scale(ground_image, (W, 60))
+ground_image = pygame.transform.scale(ground_image, (500, 60))
 GROUND_H = ground_image.get_height()
 me_image = pygame.image.load("Sprites and objects/Skins/Me/Me.png")
 me_image = pygame.transform.scale(me_image, (70, 80))
+
+boss_image = pygame.image.load("Sprites and objects/Enemies/Common/Goomba_right_1.png")
+boss_image = pygame.transform.scale(boss_image, (140, 140))
 portal_image = pygame.image.load(
     "Sprites and objects/Objects, background and other/p2.gif"
 )
 portal_image = pygame.transform.scale(portal_image, (80, 90))
 me_damaged_image = pygame.image.load("Sprites and objects/Skins/Me/Me_damaged.png")
 me_damaged_image = pygame.transform.scale(me_damaged_image, (70, 80))
+
+platform_image = pygame.image.load("Sprites and objects/Objects, background and other/2d-Pixel-Grass.png")
+platform_image = pygame.transform.scale(platform_image, (H//100, H//80))
+platform_rect = 0
 
 # Переключение музыки
 music_on = True
@@ -398,17 +406,23 @@ running_sprites_enemy_right = []
 for i in range(1, 4):
     try:
         img = pygame.image.load(f"Sprites and objects/Enemies/Common/Goomba_right_{i}.png")
-        running_sprites_enemy_right.append(pygame.transform.scale(img, (70, 80)))
+        if Level3:
+            running_sprites_enemy_right.append(pygame.transform.scale(img, (140, 140)))
+        else:
+            running_sprites_enemy_right.append(pygame.transform.scale(img, (90, 90)))
     except:
-        running_sprites_enemy_right.append(pygame.Surface((70, 80)))
+        running_sprites_enemy_right.append(pygame.Surface((90, 90)))
 
 running_sprites_enemy_left = []
 for i in range(1, 4):
     try:
         img = pygame.image.load(f"Sprites and objects/Enemies/Common/Goomba_left_{i}.png")
-        running_sprites_enemy_left.append(pygame.transform.scale(img, (70, 80)))
+        if Level3:
+            running_sprites_enemy_left.append(pygame.transform.scale(img, (140, 140)))
+        else:
+            running_sprites_enemy_left.append(pygame.transform.scale(img, (90, 90)))
     except:
-        running_sprites_enemy_left.append(pygame.Surface((70, 80)))
+        running_sprites_enemy_left.append(pygame.Surface((90, 90)))
 
 # Переменные текущего скина
 current_skin_index = 0
@@ -852,7 +866,22 @@ class Player:
         self.y_speed = -10
 
     def update(self):
-        global level_1_part_1_scroll_pos
+        global level_1_part_1_scroll_pos, platform_image, level_1_part_1_scroll_pos, level, platform_rect
+        if level == 1:
+            platform_collision_active = (level_1_part_1_scroll_pos < 420)
+            if platform_collision_active:
+                if self.rect.colliderect(pygame.Rect(
+                        platform_rect.x - level_1_part_1_scroll_pos,
+                        platform_rect.y,
+                        platform_rect.width,
+                        platform_rect.height,
+                    )):
+                    # если падаем и пересекаем сверху
+                    if self.y_speed > 0 and self.rect.bottom > platform_rect.top:
+                        self.rect.bottom = platform_rect.top
+                        self.y_speed = 0
+                        self.is_grounded = True
+                        self.can_double_jump = True
 
         # Оригинальные границы для других уровней
         if self.rect.left < 0:
@@ -876,22 +905,41 @@ class Player:
                 if self.rect.top > H:  # Полностью ушел за экран
                     self.is_out = True
         else:
-            # Обычная физика для живого персонажа
-            if self.rect.bottom >= H - GROUND_H:
-                self.rect.bottom = H - GROUND_H
-                self.y_speed = 0
-                self.is_grounded = True
-                self.can_double_jump = True  # сбрасываем при приземлении
-            else:
-                self.is_grounded = False
+            if level == 1:
+                # Обычная физика для живого персонажа
+                if self.rect.bottom >= H - GROUND_H:
+                    if not (1505 < level_1_part_1_scroll_pos < 1690):
+                        self.rect.bottom = H - GROUND_H
+                        self.y_speed = 0
+                        self.is_grounded = True
+                        self.can_double_jump = True  # сбрасываем при приземлении
+                elif 1505 < level_1_part_1_scroll_pos < 1690 and self.rect.top > H and not self.is_dead:
+                    self.is_grounded = False
+                    self.is_dead = True
+                else:
+                    self.is_grounded = False
+            if level == 2:
+                if self.rect.bottom >= H - GROUND_H:
+                    if not (1505 < level_1_part_1_scroll_pos < 2690):
+                        self.rect.bottom = H - GROUND_H
+                        self.y_speed = 0
+                        self.is_grounded = True
+                        self.can_double_jump = True  # сбрасываем при приземлении
+                elif 1505 < level_1_part_1_scroll_pos < 2690 and self.rect.top > H and not self.is_dead:
+                    self.is_grounded = False
+                    self.is_dead = True
+                else:
+                    self.is_grounded = False
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
     def respawn(self):
+        global level_1_part_1_scroll_pos
         self.is_out = False
         self.is_dead = False
         self.rect.midbottom = (W // 2, H - GROUND_H)
+        level_1_part_1_scroll_pos = 20
 
     def damaged(self):
         self.y_speed = -10
@@ -937,9 +985,10 @@ class Monster:
         self.is_grounded = False
         self.damage_given = False
         self.spawn()
+        self.HP = 100
 
     def spawn(self):
-        global Level1, Level2, Level3
+        global Level1, Level2, Level3, GROUND_H
         direction = random.randint(0, 1)
         if direction == 0:
             self.x_speed = self.speed
@@ -1020,12 +1069,137 @@ class Monster:
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
+class Boss:
+    def __init__(self):
+        global Level1, Level2, Level3
+        try:
+            if Level1:
+                self.running_sprites_enemy_right = running_sprites_enemy_right
+                self.running_sprites_enemy_left = running_sprites_enemy_left
+            elif Level2:
+                self.running_sprites_enemy_right = running_sprites_enemy_right
+                self.running_sprites_enemy_left = running_sprites_enemy_left
+            elif Level3:
+                self.running_sprites_enemy_right = running_sprites_enemy_right
+                self.running_sprites_enemy_left = running_sprites_enemy_left
+        except:
+            self.image = pygame.Surface((90, 90))
+        self.current_frame_index = 1
+        self.last_frame_update = pygame.time.get_ticks()
+        self.frame_delay = 90
+        self.image = self.running_sprites_enemy_right[0]
+        self.rect = self.image.get_rect()
+        self.x_speed = 0
+        self.y_speed = 0
+        self.speed = 5
+        self.jump_num = 0
+        self.is_out = False
+        self.is_dead = False
+        self.jump_speed = -10
+        self.gravity = 0.4
+        self.is_grounded = False
+        self.damage_given = False
+        self.spawn_time = 0
+        self.has_started_moving = False
+        self.direction = None
+        self.move_delay = None
+        self.spawn()
+        self.HP = 100
+
+    def spawn(self):
+        global Level1, Level2, Level3
+        self.rect.topleft = (W // 3 * 2, H - GROUND_H)  # сразу в позицию
+        self.x_speed = 0
+        self.y_speed = 0
+        self.spawn_time = pygame.time.get_ticks()
+        self.move_delay = 2000  # задержка перед началом движения (мс)
+        self.has_started_moving = False
+        # Можно заранее выбрать направление
+        self.direction = 'left'
+
+        # Загружаем изображение в зависимости от направления
+        try:
+            if Level1:
+                self.image = pygame.transform.scale(
+                    pygame.image.load("Sprites and objects/Enemies/Common/Goomba_left_1.png"), (90, 90))
+            elif Level2:
+                self.image = pygame.transform.scale(
+                    pygame.image.load("Sprites and objects/Enemies/Common/Goomba_left_1.png"), (90, 90))
+            elif Level3:
+                self.image = pygame.transform.scale(
+                    pygame.image.load("Sprites and objects/Enemies/Common/Goomba_left_1.png"), (140, 140))
+        except:
+            self.image = pygame.Surface((90, 90))
+
+    def update(self):
+        now = pygame.time.get_ticks()
+
+        # Запускаем движение через задержку
+        if not self.has_started_moving:
+            if now - self.spawn_time >= self.move_delay:
+                self.x_speed = -self.speed  # или self.speed, в зависимости от направления
+                self.has_started_moving = True
+
+        # Остальная логика обновлений
+        # Обновляем анимацию
+        if not self.is_dead:
+            if now - self.last_frame_update > self.frame_delay:
+                self.current_frame_index = (self.current_frame_index + 1) % len(self.running_sprites_enemy_right)
+                if self.x_speed > 0:
+                    self.image = self.running_sprites_enemy_right[self.current_frame_index]
+                else:
+                    self.image = self.running_sprites_enemy_left[self.current_frame_index]
+                self.last_frame_update = now
+        if self.rect.left < 0:
+            self.rect.left = 0
+            self.x_speed = abs(self.x_speed)
+        elif self.rect.right > W:
+            self.rect.right = W
+            self.x_speed = -abs(self.x_speed)
+        # Движение и границы
+        self.rect.x += self.x_speed
+        self.y_speed += self.gravity
+        self.rect.y += self.y_speed
+
+        # Коллизия с землей
+        if self.rect.bottom > H - GROUND_H:
+            self.rect.bottom = H - GROUND_H
+            self.y_speed = 0
+            self.is_grounded = True
+        else:
+            self.is_grounded = False
+
+    def damaged(self):
+        self.image = me_damaged_image
+
+    def kill(self):
+        global Level1, Level2, Level3
+        try:
+            if Level1:
+                self.image = pygame.transform.scale(
+                    pygame.image.load("Sprites and objects/Enemies/Common/Goomba_dead.png"),(90, 28))
+            elif Level2:
+                self.image = pygame.transform.scale(
+                    pygame.image.load("Sprites and objects/Enemies/Common/Goomba_dead.png"), (90, 28))
+            elif Level3:
+                self.image = pygame.transform.scale(
+                    pygame.image.load("Sprites and objects/Enemies/Common/Goomba_dead.png"), (140, 38))
+        except:
+            self.image = pygame.Surface((90, 90))
+        self.is_dead = True
+        self.x_speed = -self.x_speed
+        self.y_speed = self.jump_speed
+
+    def draw(self, surface):
+        surface.blit(self.image, self.rect)
+
 # Активация игрока
 player = Player()
 
 # Главное меню
 def main_menu():
     global player, menu, levels_in, from_menu, from_level, current_skin_index, background_image
+    background_image = (42, 98, 202) if dark_mode else (92, 148, 252)
 
     load_settings_sql()
     menu = True
@@ -1245,7 +1419,7 @@ def settings():
                         toggle_sound()
                     elif selected_idx == 3:
                         pending_mode = not pending_mode
-                        background_image = (82, 138, 242) if pending_mode else (92, 148, 252)
+                        background_image = (42, 98, 202) if pending_mode else (92, 148, 252)
                     elif selected_idx == 4:
                         cursor = saving.cursor()
                         if difficulty_level == 0:
@@ -1282,14 +1456,14 @@ def settings():
                             player_points_hard = player_points_hard
                         if dark_mode != pending_mode:
                             dark_mode = pending_mode
-                        background_image = (82, 138, 242) if dark_mode else (92, 148, 252)
+                        background_image = (42, 98, 202) if dark_mode else (92, 148, 252)
                     elif selected_idx == 6:
                         temp_difficulty = 0
                         save_settings_sql()
                         save_game_sql(level)
                         dark_mode = False
                         pending_mode = dark_mode
-                        background_image = (82, 138, 242) if dark_mode else (92, 148, 252)
+                        background_image = (42, 98, 202) if dark_mode else (92, 148, 252)
                         if not music_on:
                             toggle_music()
                             if music_on:
@@ -1390,6 +1564,7 @@ def secrets():
 def level_menu():
     global levels_in, music_playing, from_menu, from_level, level1_cleared, level2_cleared, level3_cleared, \
         level4_cleared, background_image, current_difficulty
+
     cursor = saving.cursor()
     # Получаем статус уровней
     if current_difficulty == 0:
@@ -1481,11 +1656,11 @@ def level_menu():
                         # Остальные уровни можно добавить по аналогии
 
         # Обработка удержания клавиш для плавной навигации
-        if keys[pygame.K_DOWN]:
+        if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             if now - last_move_time_down > MOVE_DELAY:
                 selected_idx = (selected_idx + 1) % len(options)
                 last_move_time_down = now
-        if keys[pygame.K_UP]:
+        if keys[pygame.K_UP] or keys[pygame.K_w]:
             if now - last_move_time_up > MOVE_DELAY:
                 selected_idx = (selected_idx - 1) % len(options)
                 last_move_time_up = now
@@ -1504,6 +1679,8 @@ def level_menu():
             if level2_cleared and j == 1:
                 color = (255, 255, 255) if is_selected else (0, 255, 0)
             if level3_cleared and j == 2:
+                color = (255, 255, 255) if is_selected else (0, 255, 0)
+            if level4_cleared and j == 3:
                 color = (255, 255, 255) if is_selected else (0, 255, 0)
             if j < 3:
                 x_pos = W // 3 - 100
@@ -1570,82 +1747,18 @@ def upgrade():
                     load_upgrades()
                     main_menu()
                     return
-                elif event.key in[pygame.K_d, pygame.K_RIGHT]:
-                    j = selected_idx
-                    # Обработка апгрейдов
-                    if j == 0:
-                        if current_player_points >= 1 and player.attack < 10:
-                            if sound_on:
-                                Unlock_skin_sound.play()
-                            upgrade_chars[j] += 1
-                            player.attack += 1
-                            current_player_points -= 1
-                        elif current_player_points < 1:
-                            unlock_message = "Недостаточно очков (минимум 1)"
-                            unlock_message_time = pygame.time.get_ticks()
-                    elif j == 1:
-                        if current_player_points >= 1 and player.HP < 15:
-                            if sound_on:
-                                Unlock_skin_sound.play()
-                                upgrade_chars[j] += 1
-                                player.HP += 1
-                                current_player_points -= 1
-                        elif current_player_points < 1:
-                            unlock_message = "Недостаточно очков (минимум 1)"
-                            unlock_message_time = pygame.time.get_ticks()
-                    elif j == 2 and not player.running_unlocked:
-                        if current_player_points >= 3:
-                            if sound_on:
-                                Unlock_skin_sound.play()
-                                unlock_message = "Открылся скин: Соник"
-                                unlock_message_time = pygame.time.get_ticks()
-                                upgrade_chars[j] = True
-                                player.running_unlocked = True
-                                current_player_points -= 3
-                        elif current_player_points < 3:
-                            unlock_message = "Нужно минимум 3 очка"
-                            unlock_message_time = pygame.time.get_ticks()
-                    elif j == 3 and not player.double_jump_unlocked:
-                        if current_player_points >= 4:
-                            if sound_on:
-                                Unlock_skin_sound.play()
-                            unlock_message = "Открылся скин: Марио"
-                            unlock_message_time = pygame.time.get_ticks()
-                            upgrade_chars[j] = True
-                            player.double_jump_unlocked = True
-                            current_player_points -= 4
-                        elif current_player_points < 4:
-                            unlock_message = "Нужно минимум 4 очка"
-                            unlock_message_time = pygame.time.get_ticks()
-                    elif j == 4:
-                        if current_player_points >= 3:
-                            if sound_on:
-                                Unlock_skin_sound.play()
-                            upgrade_chars[j] += 1
-                            player.shield += 1
-                            current_player_points -= 3
-                        elif current_player_points < 3:
-                            unlock_message = "Нужно минимум 3 очка"
-                            unlock_message_time = pygame.time.get_ticks()
-                elif event.key in [pygame.K_a, pygame.K_LEFT]:
-                    j = selected_idx
-                    if j == 0 and upgrade_chars[j] > 1:
+            elif event.key in [pygame.K_d, pygame.K_RIGHT]:
+                j = selected_idx
+                if j == 4:
+                    if current_player_points >= 3:
                         if sound_on:
                             Unlock_skin_sound.play()
-                        upgrade_chars[j] -= 1
-                        player.attack -= 1
-                        current_player_points += 1
-                    elif j == 1 and upgrade_chars[j] > 3:
-                        if sound_on:
-                            Unlock_skin_sound.play()
-                        upgrade_chars[j] -= 1
-                        current_player_points += 1
-                        player.HP -= 1
-                    elif j == 4 and upgrade_chars[j] >= 1:
-                        if sound_on:
-                            Unlock_skin_sound.play()
-                        upgrade_chars[j] -= 1
-                        current_player_points += 3
+                        upgrade_chars[j] += 1
+                        player.shield += 1
+                        current_player_points -= 3
+                    elif current_player_points < 3:
+                        unlock_message = "Нужно минимум 3 очка"
+                        unlock_message_time = pygame.time.get_ticks()
 
         keys = pygame.key.get_pressed()
 
@@ -1697,9 +1810,13 @@ Shield = player.shield
 
 # Первая часть уровня
 def level_1_part_1():
-    global level_part_1, level_1_part_1_scroll_pos, level_1_part_1_in, menu, playing_level, playing_menu, score, level
+    global level_part_1, level_1_part_1_scroll_pos, level_1_part_1_in, menu, playing_level, playing_menu, score, \
+        level, platform_image, player, platform_rect
     portal_rect = portal_image.get_rect(
         center=(level_1_part_1_WIDTH - 200, H - GROUND_H - 45)
+    )
+    platform_rect = platform_image.get_rect(
+        center=(100, H - GROUND_H - 45)
     )
     save_message_displayed = False
     save_message_timer = 0
@@ -1714,12 +1831,18 @@ def level_1_part_1():
     # Создаем большую поверхность для уровня
     level_surface = pygame.Surface((level_1_part_1_WIDTH, H))
     level_surface.fill(background_image)  # Основной фон
-    level = load_game_sql()
-    if level != 1:
-        level_1_part_1_scroll_pos = 0
     # Рисуем землю
-    for x in range(0, level_1_part_1_WIDTH, ground_image.get_width()):
+    for x in range(0, 1800, ground_image.get_width()):
         level_surface.blit(ground_image, (x, H - GROUND_H))
+    for x in range(2200, level_1_part_1_WIDTH, ground_image.get_width()):
+        level_surface.blit(ground_image, (x, H - GROUND_H))
+    # Создаем платформы
+    # Переменная для смещения платформ
+    platforms_offset = 0
+    if level_1_part_1_scroll_pos < 905:
+        platform_rect = platform_rect.move(-platforms_offset, 0)
+        pygame.draw.rect(screen, (100, 50, 20), platform_rect)
+
     while level_1_part_1_in:
         now = pygame.time.get_ticks()
         for event in pygame.event.get():
@@ -1735,87 +1858,131 @@ def level_1_part_1():
                     save_message_timer = now
                 elif event.key == pygame.K_ESCAPE:
                     pause()
-                if (
-                    event.key == pygame.K_w
-                    or event.key == pygame.K_UP
-                ):
+                elif player.is_out:
+                    load_game_sql()
+                    load_upgrades()
+                    player.respawn()
+                    level_1_part_1_scroll_pos = 20
+                    player.speed = 5
+                    player.can_jump = True
+                if (event.key == pygame.K_w or event.key == pygame.K_UP) and not player.is_dead:
                     player.handle_jump()
 
         # Очищаем экран
         screen.fill(background_image)
+        check_platform_collisions = (level_1_part_1_scroll_pos < 420)
 
+        # Отрисовка уровня
         screen.blit(level_surface, (0, 0), (level_1_part_1_scroll_pos, 0, W, H))
+        # Отрисовка платформ с учетом смещения
+        if level_1_part_1_scroll_pos < 905:
+            platform_rect = platform_rect.move(-platforms_offset, 0)
+            pygame.draw.rect(screen, (100, 50, 20), platform_rect)
 
-        # Отрисовываем портал (с учетом скролла)
+        # Отрисовка портала (с учетом скролла)
         screen.blit(
             portal_image, (portal_rect.x - level_1_part_1_scroll_pos, portal_rect.y)
         )
 
-        # Отрисовываем игрока (всегда в центре экрана)
+        # Отрисовка игрока (всегда в центре)
         player.draw(screen)
 
         if save_message_displayed and now - save_message_timer < 2000:
             draw_text(
                 "Игра сохранена", font_small, (255, 255, 255), screen, W // 2, H // 2
             )
-
-        if not paused:
-            # Обработка ввода и движение
-            player.handle_input()
-            player.update()
-            keys = pygame.key.get_pressed()
-            # Обновляем скролл на основе движения игрока
-            if (
-                player.rect.centerx > W // 2
-                and level_1_part_1_scroll_pos < level_1_part_1_WIDTH - W
-            ):
-                # Игрок движется вправо - скроллим фон
-                scroll_amount = player.rect.centerx - W // 2
-                scroll_speed = 5  # Скорость скролла
-                if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
-                    scroll_speed *= 2
-                level_1_part_1_scroll_pos += min(scroll_amount, scroll_speed)
-                # Фиксируем игрока в центре
-                player.rect.centerx = W // 2
-            elif player.rect.centerx < W // 2 and level_1_part_1_scroll_pos > 0:
-                # Игрок движется влево - скроллим фон
-                scroll_amount = W // 2 - player.rect.centerx
-                scroll_speed = 5  # Скорость скролла
-                if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
-                    scroll_speed *= 2
-                level_1_part_1_scroll_pos -= min(scroll_amount, scroll_speed)
-                # Фиксируем игрока в центре
-                player.rect.centerx = W // 2
-
-            if player.rect.bottom > H - GROUND_H:
-                player.rect.bottom = H - GROUND_H
-                player.y_speed = 0
-                player.is_grounded = True
-
-            # Проверка коллизии с порталом
-            if player.rect.colliderect(
-                pygame.Rect(
-                    portal_rect.x - level_1_part_1_scroll_pos,
-                    portal_rect.y,
-                    portal_rect.width,
-                    portal_rect.height,
+        if player.is_out:
+                draw_text(
+                    "PRESS ANY KEY", font_small, (255, 255, 255), screen, W // 2, H // 2
                 )
-            ):
-                level_1_part_1_scroll_pos = 3200
-                level = 1
-                save_game_sql(level)
-                level_part_1 = False
-                level_1_part_2()
-                return
+        else:
+            if not paused:
+                player.handle_input()
+                player.update()
+                keys = pygame.key.get_pressed()
+
+                # Обновляем скролл на основе движения игрока
+                if (
+                    player.rect.centerx > W // 2
+                    and level_1_part_1_scroll_pos < level_1_part_1_WIDTH - W
+                ):
+                    # Игрок движется вправо - скроллим фон
+                    scroll_amount = player.rect.centerx - W // 2
+                    scroll_speed = 5  # Скорость скролла
+                    if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+                        scroll_speed *= 2
+                    platforms_offset = level_1_part_1_scroll_pos
+                    player.rect.centerx = W // 2
+                    new_scroll_pos = level_1_part_1_scroll_pos + min(scroll_amount, scroll_speed)
+                    if new_scroll_pos > level_1_part_1_WIDTH - W:
+                        new_scroll_pos = level_1_part_1_WIDTH - W
+                    level_1_part_1_scroll_pos = new_scroll_pos
+                elif (
+                    player.rect.centerx < W // 2
+                    and level_1_part_1_scroll_pos > 0
+                ):
+                    # Игрок движется влево - скроллим фон
+                    scroll_amount = W // 2 - player.rect.centerx
+                    scroll_speed = 5  # Скорость скролла
+                    if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+                        scroll_speed *= 2
+                    platforms_offset = level_1_part_1_scroll_pos
+                    new_scroll_pos = level_1_part_1_scroll_pos - min(scroll_amount, scroll_speed)
+                    if new_scroll_pos < 0:
+                        new_scroll_pos = 0
+                    level_1_part_1_scroll_pos = new_scroll_pos
+                    player.rect.centerx = W // 2
+
+                # Обработка гравитации и земли
+                if player.rect.bottom > H - GROUND_H:
+                    if not (1500 <= level_1_part_1_scroll_pos <= 1700):
+                        player.rect.bottom = H - GROUND_H
+                        player.y_speed = 0
+                        player.is_grounded = True
+                if 1500 < level_1_part_1_scroll_pos < 1700 and player.rect.bottom > H and not player.is_dead:
+                    player.y_speed = 0
+                    player.kill(me_image)
+                    player.speed = 0
+
+                # Проверка столкновений с платформами
+                if check_platform_collisions:
+                    platform_rect = platform_rect.move(-platforms_offset, 0)
+                    if player.rect.colliderect(platform_rect):
+                        if (player.rect.bottom < platform_rect.top and
+                                player.rect.left <= platform_rect.right and
+                                player.rect.right >= platform_rect.left):
+                            player.rect.bottom = platform_rect.top
+                            player.y_speed = 0
+                            player.is_grounded = True
+                            player.can_double_jump = True
+                else:
+                    pass
+
+                # Проверка коллизии с порталом
+                if player.rect.colliderect(
+                    pygame.Rect(
+                        portal_rect.x - level_1_part_1_scroll_pos,
+                        portal_rect.y,
+                        portal_rect.width,
+                        portal_rect.height,
+                    )
+                ):
+                    level_1_part_1_scroll_pos = 3200
+                    level = 1
+                    save_game_sql(level)
+                    level_part_1 = False
+                    level_1_part_2()
+                    return
 
         # Индикатор прогресса
         progress = level_1_part_1_scroll_pos / (level_1_part_1_WIDTH - W)
         pygame.draw.rect(screen, (255, 255, 255), (50, 30, 200, 10))
         pygame.draw.rect(screen, (0, 255, 0), (50, 30, 200 * progress, 10))
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_w] or keys[pygame.K_UP]:
+        if (keys[pygame.K_w] or keys[pygame.K_UP]) and not player.is_dead:
             if player.is_grounded:
                 player.handle_jump()
+        print(level_1_part_1_scroll_pos)
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -1825,7 +1992,7 @@ def level_1_part_2():
     global monsters, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, \
         HP, from_level, from_menu, playing_menu, Shield, level1_cleared, level2_cleared, Level1, level, \
         current_difficulty, player_points_easy, player_points_medium, player_points_hard, level_1_part_1_in, \
-        message, message_time, MESSAGE_DURATION
+        message, message_time, MESSAGE_DURATION, ground_image
     load_upgrades()
     HP = player.HP
     Shield = player.shield
@@ -1841,6 +2008,7 @@ def level_1_part_2():
     Level1 = True
     invincible = False
     invincible_end_time = 0
+    ground_image = pygame.transform.scale(ground_image, (500, 60))
 
     while Level1:
         now = pygame.time.get_ticks()
@@ -1883,6 +2051,7 @@ def level_1_part_2():
                 player.image = me_image
         screen.fill((92, 148, 252))
         screen.blit(ground_image, (0, H - GROUND_H))
+        screen.blit(ground_image, (500, H - GROUND_H))
 
         for monster in monsters:
             monster.draw(screen)
@@ -1911,18 +2080,22 @@ def level_1_part_2():
             else:
                 message = None
         if score >= 10:
+            if player.HP < 5:
+                player.HP = 5
+            if player.attack < 2:
+                player.attack = 2
+            player.running_unlocked = True
+            save_upgrades()
             # Убиваем всех монстров
             for monster in list(monsters):
                 monster.kill()
-
-            end_time = pygame.time.get_ticks() + 2000  # 2 секунды на завершение
+            end_time = pygame.time.get_ticks() + 4000
 
             while pygame.time.get_ticks() < end_time:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         pygame.quit()
                         sys.exit()
-
                 # Обновляем игрока (чтобы он мог упасть на землю)
                 player.handle_input()
                 player.update()
@@ -1936,6 +2109,7 @@ def level_1_part_2():
                 # Отрисовка
                 screen.fill((92, 148, 252))
                 screen.blit(ground_image, (0, H - GROUND_H))
+                screen.blit(ground_image, (500, H - GROUND_H))
 
                 for monster in monsters:
                     monster.draw(screen)
@@ -1944,12 +2118,20 @@ def level_1_part_2():
                 draw_text(str(score), font_large, (255, 255, 255), screen, W // 2, 20)
                 draw_text(f"HP: {HP}", font_large, (255, 255, 255), screen, W // 3, 20)
                 draw_text(
+                    "Открыты навык: бег, скин 'Соник', +2HP, +1ATK",
+                    font_small,
+                    (255, 255, 255),
+                    screen,
+                    W // 2,
+                    H // 2 + 20,
+                )
+                draw_text(
                     "Уровень пройден!",
                     font_small,
                     (255, 255, 255),
                     screen,
                     W // 2,
-                    H // 2,
+                    H // 2 - 20,
                 )
                 draw_text(
                     f"Shields: {Shield}",
@@ -2000,7 +2182,6 @@ def level_1_part_2():
             from_level = True
             from_menu = False
             level_1_part_1_in = False
-            print(player_points_easy)
             level_menu()
 
         if save_message_displayed and now - save_message_timer < 2000:
@@ -2096,7 +2277,9 @@ def level_2_part_1():
     if level != 2:
         level_1_part_1_scroll_pos = 0
     # Рисуем землю
-    for x in range(0, level_1_part_1_WIDTH, ground_image.get_width()):
+    for x in range(0, 1800, ground_image.get_width()):
+        level_surface.blit(ground_image, (x, H - GROUND_H))
+    for x in range(2900, level_1_part_1_WIDTH, ground_image.get_width()):
         level_surface.blit(ground_image, (x, H - GROUND_H))
 
     while level_2_part_1_in:
@@ -2168,9 +2351,14 @@ def level_2_part_1():
                 player.rect.centerx = W // 2
 
             if player.rect.bottom > H - GROUND_H:
-                player.rect.bottom = H - GROUND_H
+                if not (1500 <= level_1_part_1_scroll_pos <= 2600):
+                    player.rect.bottom = H - GROUND_H
+                    player.y_speed = 0
+                    player.is_grounded = True
+            if 1500 < level_1_part_1_scroll_pos < 2600 and player.rect.bottom > H and not player.is_dead:
                 player.y_speed = 0
-                player.is_grounded = True
+                player.kill(me_image)
+                player.speed = 0
 
             # Проверка коллизии с порталом
             if player.rect.colliderect(
@@ -2204,7 +2392,8 @@ def level_2_part_1():
 def level_2_part_2():
     global monsters, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, HP, \
         from_level, from_menu, playing_menu, Shield, level2_cleared, level1_cleared, Level2, level, \
-        player_points_easy, player_points_medium, player_points_hard, level_2_part_1_in, message, message_time
+        player_points_easy, player_points_medium, player_points_hard, level_2_part_1_in, message, \
+        message_time, ground_image
     load_upgrades()
     HP = player.HP
     Shield = player.shield
@@ -2215,6 +2404,7 @@ def level_2_part_2():
     message_time = pygame.time.get_ticks()
     # Остальной код уровня
     player.rect.midbottom = (W // 2, H - GROUND_H)
+    ground_image = pygame.transform.scale(ground_image, (W, 60))
 
     save_message_displayed = False
     save_message_timer = 0
@@ -2289,6 +2479,10 @@ def level_2_part_2():
             else:
                 message = None
         if score >= 10:
+            if player.HP < 8:
+                player.HP = 8
+            player.double_jump_unlocked = True
+            save_upgrades()
             # Убиваем всех монстров
             for monster in list(monsters):
                 monster.kill()
@@ -2322,12 +2516,20 @@ def level_2_part_2():
                 draw_text(str(score), font_large, (255, 255, 255), screen, W // 2, 20)
                 draw_text(f"HP: {HP}", font_large, (255, 255, 255), screen, W // 3, 20)
                 draw_text(
+                    "Открыты навык: двойной прыжок, скин 'Марио', +3HP",
+                    font_small,
+                    (255, 255, 255),
+                    screen,
+                    W // 2,
+                    H // 2 + 20,
+                )
+                draw_text(
                     "Уровень пройден!",
                     font_small,
                     (255, 255, 255),
                     screen,
                     W // 2,
-                    H // 2,
+                    H // 2 - 20,
                 )
                 draw_text(
                     f"Shields: {Shield}",
@@ -2574,20 +2776,20 @@ def level_3_part_1():
         pygame.display.flip()
         clock.tick(FPS)
 
-
 # Вторая часть уровня
 def level_3_part_2():
-    global monsters, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, HP, \
+    global boss, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, HP, \
         from_level, from_menu, playing_menu, Shield, level3_cleared, level1_cleared, Level3, level, \
-        player_points_easy, player_points_medium, player_points_hard, level_3_part_1_in
+        player_points_easy, player_points_medium, player_points_hard, level_3_part_1_in, ground_image
     load_upgrades()
     HP = player.HP
     Shield = player.shield
     # Обнуляем список врагов и таймеры при входе
-    monsters = []
+    boss = []
     last_spawn_time = pygame.time.get_ticks()
     # Остальной код уровня
-    player.rect.midbottom = (W // 2, H - GROUND_H)
+    player.rect.midbottom = (W // 3, H - GROUND_H)
+    ground_image = pygame.transform.scale(ground_image, (W, 60))
 
     save_message_displayed = False
     save_message_timer = 0
@@ -2595,6 +2797,8 @@ def level_3_part_2():
     Level3 = True
     invincible = False
     invincible_end_time = 0
+    invincible_boss = False
+    invincible_end_time_boss = 0
 
     while Level3:
         now = pygame.time.get_ticks()
@@ -2609,6 +2813,9 @@ def level_3_part_2():
                     invincible = False
                     player.speed = 5
                     player.can_jump = True
+                if now >= invincible_end_time_boss:
+                    boss[0].image = boss_image
+                    invincible_boss = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s:
                     level = 3
@@ -2622,7 +2829,7 @@ def level_3_part_2():
                     load_upgrades()
                     HP = player.HP
                     player.respawn()
-                    monsters.clear()
+                    boss.clear()
                     spawn_delay = 2000
                 if event.key == pygame.K_w or event.key == pygame.K_UP:
                     player.handle_jump()
@@ -2632,11 +2839,16 @@ def level_3_part_2():
                 player.image = me_damaged_image
             else:
                 player.image = me_image
+        if invincible_boss:
+            if now % 500 < 250:
+                Boss.image = me_damaged_image
+            else:
+                Boss.image = boss_image
         screen.fill((148, 150, 92))
         screen.blit(ground_image, (0, H - GROUND_H))
 
-        for monster in monsters:
-            monster.draw(screen)
+        for Boss_1 in boss:
+            Boss_1.draw(screen)
 
         player.draw(screen)
 
@@ -2646,10 +2858,10 @@ def level_3_part_2():
             f"Shields: {Shield}", font_large, (255, 255, 255), screen, W // 3 * 2, 20
         )
 
-        if score >= 10:
+        if score >= 1:
             # Убиваем всех монстров
-            for monster in list(monsters):
-                monster.kill()
+            for Boss_1 in list(boss):
+                Boss_1.kill()
 
             end_time = pygame.time.get_ticks() + 2000  # 2 секунды на завершение
 
@@ -2664,17 +2876,17 @@ def level_3_part_2():
                 player.update()
 
                 # Обновляем монстров (чтобы они упали за экран)
-                for monster in list(monsters):
-                    monster.update()
-                    if monster.is_out:
-                        monsters.remove(monster)
+                for Boss_1 in list(boss):
+                    Boss_1.update()
+                    if Boss_1.is_out:
+                        boss.remove(Boss_1)
 
                 # Отрисовка
                 screen.fill((92, 148, 252))
                 screen.blit(ground_image, (0, H - GROUND_H))
 
-                for monster in monsters:
-                    monster.draw(screen)
+                for Boss_1 in boss:
+                    Boss_1.draw(screen)
 
                 player.draw(screen)
                 draw_text(str(score), font_large, (255, 255, 255), screen, W // 2, 20)
@@ -2751,32 +2963,39 @@ def level_3_part_2():
                 player.handle_input()
                 player.update()
 
-                if now - last_spawn_time > spawn_delay:
-                    monsters.append(Monster())
+                if not boss:
+                    boss.append(Boss())
                     last_spawn_time = now
 
-                for monster in list(monsters):
-                    if monster.is_out:
-                        monsters.remove(monster)
+                for Boss_1 in list(boss):
+                    if Boss_1.is_out:
+                        boss.remove(Boss_1)
                     else:
-                        monster.update()
+                        Boss_1.update()
 
                         if (
-                            player.rect.colliderect(monster.rect)
-                            and not monster.is_dead
+                            player.rect.colliderect(Boss_1.rect)
+                            and not Boss_1.is_dead
                         ):
                             if (
-                                player.rect.bottom < monster.rect.centery
+                                player.rect.bottom < Boss_1.rect.centery
                                 and player.y_speed > 0
-                                and abs(player.rect.centerx - monster.rect.centerx)
-                                < monster.rect.width / 2
+                                and abs(player.rect.centerx - Boss_1.rect.centerx)
+                                < Boss_1.rect.width / 2
                             ):
-                                monster.kill()
-                                player.y_speed -= 15
-                                player.is_grounded = False
-                                player.can_jump = False
-                                score += 1
-                            elif not monster.damage_given and not invincible:
+                                if Boss_1.HP > 0:
+                                    print(f"Удар по боссу: HP до удара {Boss_1.HP}")
+                                    Boss_1.HP -= player.attack
+                                    invincible_boss = True
+                                    invincible_end_time_boss = now + 1000
+                                    print(f"HP после удара {Boss_1.HP}")
+                                else:
+                                    Boss_1.kill()
+                                    player.y_speed -= 15
+                                    player.is_grounded = False
+                                    player.can_jump = False
+                                    score += 1
+                            elif not Boss_1.damage_given and not invincible:
                                 if Shield >= 1:
                                     Shield -= 1
                                     player.shield -= 1
@@ -2788,7 +3007,7 @@ def level_3_part_2():
                                 else:
                                     HP -= 1
                                     player.damaged()
-                                    monster.damage_given = True
+                                    Boss_1.damage_given = True
                                     invincible = True
                                     invincible_end_time = (
                                         now + 1000
@@ -2799,7 +3018,7 @@ def level_3_part_2():
                                 if HP <= 0:
                                     player.kill(me_image)
                         else:
-                            monster.damage_given = False
+                            Boss_1.damage_given = False
         keys = pygame.key.get_pressed()
         if keys[pygame.K_w] or keys[pygame.K_UP]:
             if player.is_grounded:
@@ -2937,7 +3156,7 @@ def level_4_part_1():
 def level_4_part_2():
     global monsters, last_spawn_time, spawn_delay, score, level_1_part_1_scroll_pos, HP, \
         from_level, from_menu, playing_menu, Shield, level4_cleared, Level4, level, \
-        player_points_easy, player_points_medium, player_points_hard, level_4_part_1_in
+        player_points_easy, player_points_medium, player_points_hard, level_4_part_1_in, ground_image
     load_upgrades()
     HP = player.HP
     Shield = player.shield
@@ -2946,6 +3165,7 @@ def level_4_part_2():
     last_spawn_time = pygame.time.get_ticks()
     # Остальной код уровня
     player.rect.midbottom = (W // 2, H - GROUND_H)
+    ground_image = pygame.transform.scale(ground_image, (W, 60))
 
     save_message_displayed = False
     save_message_timer = 0
