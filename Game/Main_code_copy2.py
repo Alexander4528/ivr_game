@@ -1756,18 +1756,19 @@ def upgrade():
                     load_upgrades()
                     main_menu()
                     return
-            elif event.key in [pygame.K_d, pygame.K_RIGHT]:
-                j = selected_idx
-                if j == 4:
-                    if current_player_points >= 3:
-                        if sound_on:
-                            Unlock_skin_sound.play()
-                        upgrade_chars[j] += 1
-                        player.shield += 1
-                        current_player_points -= 3
-                    elif current_player_points < 3:
-                        unlock_message = "Нужно минимум 3 очка"
-                        unlock_message_time = pygame.time.get_ticks()
+                elif event.key in [pygame.K_d, pygame.K_RIGHT]:
+                    j = selected_idx
+                    if j == 4:
+                        if current_player_points >= 3:
+                            if sound_on:
+                                Unlock_skin_sound.play()
+                            upgrade_chars[j] += 1
+                            player.shield += 1
+                            current_player_points -= 3
+                            save_upgrades()
+                        elif current_player_points < 3:
+                            unlock_message = "Нужно минимум 3 очка"
+                            unlock_message_time = pygame.time.get_ticks()
 
         keys = pygame.key.get_pressed()
 
