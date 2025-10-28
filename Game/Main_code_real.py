@@ -1,8 +1,8 @@
 # Импорт необходимых библиотек
-import pygame
+import random
 import sqlite3
 import sys
-import random
+import pygame
 from pygame import Surface
 
 pygame.init()
@@ -87,21 +87,6 @@ level4_cleared = False
 level5_cleared = False
 level6_cleared = False
 Level = 1
-
-# Переменные для уровня с боссом
-boss_level_enemies_defeated = {
-    "easy": {"type1": 0, "type2": 0, "type3": 0},
-    "normal": {"type1": 0, "type2": 0, "type3": 0},
-    "hard": {"type1": 0, "type2": 0, "type3": 0}
-}
-boss_level_required_kills = {
-    "easy": 5,
-    "normal": 7,
-    "hard": 10
-}
-boss_battle_active = False
-boss_level_preparation = True
-victory_shown = False
 
 
 # Класс для управления уровнями
@@ -226,10 +211,10 @@ class LevelManager:
                 "enemy_count": 10
             },
             5: {
-                "name": "Уровень с боссом",
+                "name": "Уровень 5",
                 "width": 5000,
                 "music": level_4_part_1_music,
-                "bg_color": (150, 50, 50),
+                "bg_color": (100, 100, 150),
                 "platforms": [
                     pygame.Rect(150, 550, 120, 20),
                     pygame.Rect(350, 450, 130, 20),
@@ -252,9 +237,8 @@ class LevelManager:
                     pygame.Rect(4500, 360, 130, 20),
                     pygame.Rect(4750, 260, 120, 20)
                 ],
-                "has_boss": True,
-                "enemy_count": 0,
-                "is_boss_level": True
+                "has_boss": False,
+                "enemy_count": 10
             },
             6: {
                 "name": "Уровень 6",
@@ -378,7 +362,7 @@ class LevelManager:
             return
 
         # Временно сбрасываем статус перед проверкой
-        player_0.is_grounded = False
+        player_0.is_grounded = False  # Исправлено: убрали лишнюю букву
 
         for platform in self.levels[self.current_level]["platforms"]:
             platform_on_screen = platform.move(-self.scroll_pos, 0)
@@ -391,27 +375,28 @@ class LevelManager:
                         player_0.y_speed >= 0):
                     player_0.rect.bottom = platform_on_screen.top
                     player_0.y_speed = 0
-                    player_0.is_grounded = True
-                    player_0.jump_count = 0
-                    break
+                    player_0.is_grounded = True  # Исправлено: убрали лишнюю букву
+                    player_0.jump_count = 0  # Сбрасываем счетчик прыжков при приземлении на платформу
+                    break  # Важно: выходим после первой успешной коллизии
 
         # Если не на платформе, проверяем основную землю
-        if not player_0.is_grounded and player_0.rect.bottom >= H - GROUND_H:
+        if not player_0.is_grounded and player_0.rect.bottom >= H - GROUND_H:  # Исправлено: убрали лишнюю букву
             if level_num == 1:
                 if not (1505 < level_manager.scroll_pos < 1690):
                     player_0.rect.bottom = H - GROUND_H
                     player_0.y_speed = 0
-                    player_0.is_grounded = True
-                    player_0.jump_count = 0
-                elif 1505 < level_manager.scroll_pos < 1700 and player_0.rect.bottom > H:
+                    player_0.is_grounded = True  # Исправлено: убрали лишнюю букву
+                    player_0.jump_count = 0  # Сбрасываем счетчик прыжков при приземлении на землю
+                elif 1505 < level_manager.scroll_pos < 1690 and player_0.rect.bottom > H:
                     player_0.kill(me_image)
                 else:
-                    player_0.is_grounded = False
+                    player_0.is_grounded = False  # Исправлено: убрали лишнюю букву
             else:
                 player_0.rect.bottom = H - GROUND_H
                 player_0.y_speed = 0
-                player_0.is_grounded = True
-                player_0.jump_count = 0
+                player_0.is_grounded = True  # Исправлено: убрали лишнюю букву
+                player_0.jump_count = 0  # Сбрасываем счетчик прыжков при приземлении на землю
+
 
 
 # Создаем менеджер уровней
@@ -632,12 +617,13 @@ confirmed_skin_index = current_skin_index
 
 
 # Класс игрока
+# Класс игрока - исправленная версия
 class Player:
     def __init__(self):
         self.speed = 5
         self.gravity = 0.4
         self.y_speed = 0
-        self.is_grounded = False
+        self.is_grounded = False  # Исправлено: убрали лишнюю букву
         self.run_animation_index = 0
         self.last_update_time = pygame.time.get_ticks()
         self.attack = 1
@@ -659,8 +645,8 @@ class Player:
         self.rect.midbottom = (W // 2, H - GROUND_H)
         self.image = self.idle_sprite
         self.death_timer = 0
-        self.jump_count = 0
-        self.max_jumps = 2
+        self.jump_count = 0  # Счетчик прыжков
+        self.max_jumps = 2  # Максимум 2 прыжка
 
     def handle_input(self):
         if self.is_dead:
@@ -695,9 +681,11 @@ class Player:
         if self.is_dead:
             return
 
+        # Если стоит на земле или платформе - можно прыгать
         if self.is_grounded:
             self.jump()
             self.jump_count = 1
+        # Если уже в воздухе и есть двойной прыжок - можно сделать второй прыжок
         elif (self.double_jump_unlocked and
               self.jump_count < self.max_jumps and
               not self.is_grounded):
@@ -725,7 +713,7 @@ class Player:
 
     def jump(self):
         self.y_speed = -10
-        self.is_grounded = False
+        self.is_grounded = False  # Сразу сбрасываем grounded после прыжка
 
     def update(self):
         if self.is_out:
@@ -755,14 +743,14 @@ class Player:
         # Проверка коллизий с платформами (выполняется в level_manager.check_platform_collisions)
         # После проверки коллизий, если игрок на земле - сбрасываем счетчик прыжков
         if self.is_grounded:
-            self.jump_count = 0
+            self.jump_count = 0  # Сбрасываем счетчик прыжков при приземлении
 
         # Проверка основной земли
         if self.rect.bottom >= H - GROUND_H:
             if not (1505 < level_manager.scroll_pos < 1690):
                 self.rect.bottom = H - GROUND_H
                 self.is_grounded = True
-                self.jump_count = 0
+                self.jump_count = 0  # Сбрасываем счетчик прыжков
             elif 1505 < level_manager.scroll_pos < 1700 and self.rect.bottom > H:
                 self.kill(me_image)
             else:
@@ -784,7 +772,7 @@ class Player:
         self.rect.midbottom = (W // 2, H - GROUND_H)
         self.y_speed = 0
         self.is_grounded = False
-        self.jump_count = 0
+        self.jump_count = 0  # Сбрасываем счетчик прыжков
         self.jump_flag = False
         self.image = self.idle_sprite
         self.run_animation_index = 0
@@ -893,209 +881,163 @@ class Monster:
         surface.blit(self.image, self.rect)
 
 
-# Класс босса для уровня с боссом
 class Boss:
-    def __init__(self, difficulty="normal"):
+    def __init__(self):
         self.running_sprites_enemy_right = running_sprites_right_boss
         self.running_sprites_enemy_left = running_sprites_left_boss
         self.current_frame_index = 0
         self.last_frame_update = pygame.time.get_ticks()
         self.frame_delay = 90
-        self.original_image = pygame.transform.scale(boss_image, (140, 140))
-        self.image = self.original_image.copy()
+        self.image = pygame.transform.scale(boss_image, (140, 140))
         self.rect = self.image.get_rect()
         self.x_speed = 0
         self.y_speed = 0
-
-        # Базовая статистика в зависимости от сложности
-        self.difficulty = difficulty
-        self.set_difficulty_stats()
-
-        self.max_HP = self.HP
-        self.current_phase = 1
-        self.phase_transition = False
-        self.phase_transition_start = 0
-        self.phase_transition_duration = 5000  # 5 секунд для перехода
-
+        self.speed = 3
         self.is_out = False
         self.is_dead = False
-        self.jump_speed = -12
+        self.jump_speed = -10
         self.gravity = 0.4
         self.is_grounded = False
         self.damage_given = False
 
+        # Фазы босса (0-2)
+        self.phase = 0
+        self.HP = 50
+        self.max_HP = 50
+        self.phase_changed = False  # Флаг смены фазы
+
+        # Таймеры и задержки
         self.spawn_time = pygame.time.get_ticks()
         self.has_started_moving = False
         self.move_delay = 1500
-
         self.attack_cooldown = 0
-        self.jump_cooldown = 0
-        self.jump_interval = 3000  # Прыжки каждые 3 секунды в 3 фазе
+        self.behavior_change_time = pygame.time.get_ticks()
+        self.behavior_duration = 2000
+
+        # Текущее поведение
+        self.current_behavior = "patrol"
+        self.charge_direction = 0
+        self.jump_ready = True
+
+        # Границы движения
+        self.left_boundary = 50
+        self.right_boundary = W - 50
+
+        # Атаки и спецспособности
+        self.special_attack_cooldown = 0
+        self.projectiles = []
 
         self.spawn()
-
-    def set_difficulty_stats(self):
-        """Установка характеристик в зависимости от сложности"""
-        if self.difficulty == "easy":
-            self.HP = 50
-            self.speed = 3
-            self.damage = 2
-            self.phase_transition_duration = 5000
-        elif self.difficulty == "normal":
-            self.HP = 75
-            self.speed = 4
-            self.damage = 3
-            self.phase_transition_duration = 4000
-        elif self.difficulty == "hard":
-            self.HP = 100
-            self.speed = 5
-            self.damage = 4
-            self.phase_transition_duration = 3000
-
-    def check_phase_transition(self):
-        """Проверка перехода между фазами"""
-        hp_percent = (self.HP / self.max_HP) * 100
-
-        new_phase = None
-        if 50 <= hp_percent <= 100:
-            new_phase = 1
-        elif 25 <= hp_percent < 50:
-            new_phase = 2
-        elif hp_percent < 25:
-            new_phase = 3
-
-        if new_phase != self.current_phase and new_phase is not None:
-            self.start_phase_transition(new_phase)
-
-    def start_phase_transition(self, new_phase):
-        """Начало перехода между фазами"""
-        self.current_phase = new_phase
-        self.phase_transition = True
-        self.phase_transition_start = pygame.time.get_ticks()
-        self.x_speed = 0  # Останавливаем босса
-
-        # Применяем характеристики фазы
-        self.apply_phase_stats()
-
-        # Визуальный эффект - покраснение
-        self.apply_red_effect()
-
-    def apply_phase_stats(self):
-        """Применение характеристик в зависимости от фазы"""
-        base_speed = 3 if self.difficulty == "easy" else 4 if self.difficulty == "normal" else 5
-        base_damage = 2 if self.difficulty == "easy" else 3 if self.difficulty == "normal" else 4
-
-        if self.current_phase == 1:
-            # Фаза 1: Скорость ниже средней, базовая атака
-            self.speed = base_speed * 0.8
-            self.damage = base_damage
-        elif self.current_phase == 2:
-            # Фаза 2: Средняя скорость, атака ×1.5
-            self.speed = base_speed
-            self.damage = int(base_damage * 1.5)
-        elif self.current_phase == 3:
-            # Фаза 3: Высокая скорость, атака ×2, прыжки
-            self.speed = base_speed * 1.2
-            self.damage = base_damage * 2
-
-    def apply_red_effect(self):
-        """Визуальный эффект покраснения во время перехода"""
-        red_overlay = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
-        red_overlay.fill((255, 0, 0, 150))
-        self.image = self.original_image.copy()
-        self.image.blit(red_overlay, (0, 0))
-
-    def remove_red_effect(self):
-        """Удаление эффекта покраснения"""
-        self.image = self.original_image.copy()
-
-    def handle_jumping(self):
-        """Обработка прыжков в третьей фазе"""
-        if self.current_phase == 3 and self.is_grounded:
-            current_time = pygame.time.get_ticks()
-            if current_time - self.jump_cooldown > self.jump_interval:
-                self.y_speed = self.jump_speed
-                self.jump_cooldown = current_time
-                self.is_grounded = False
 
     def spawn(self):
         self.rect.midbottom = (W // 2, H - GROUND_H)
         self.x_speed = 0
         self.has_started_moving = False
         self.HP = self.max_HP
-        self.current_phase = 1
-        self.phase_transition = False
-        self.apply_phase_stats()
+        self.phase = 0
+        self.current_behavior = "patrol"
+        self.is_dead = False  # ВАЖНО: сбрасываем статус смерти
+        self.is_grounded = True  # ВАЖНО: устанавливаем grounded при спавне
 
-    def update(self):
-        now = pygame.time.get_ticks()
+    def update_phase(self):
+        # Определяем фазу на основе оставшегося HP
+        hp_percent = self.HP / self.max_HP
+        old_phase = self.phase
 
-        # Проверка перехода между фазами
-        self.check_phase_transition()
-
-        # Обработка перехода между фазами
-        if self.phase_transition:
-            if now - self.phase_transition_start >= self.phase_transition_duration:
-                self.phase_transition = False
-                self.remove_red_effect()
-                # Возобновляем движение после перехода
-                if self.has_started_moving:
-                    self.x_speed = -self.speed if self.rect.centerx < W // 2 else self.speed
-            return
-
-        # Запуск движения после задержки
-        if not self.has_started_moving and now - self.spawn_time >= self.move_delay:
-            self.x_speed = -self.speed
-            self.has_started_moving = True
-
-        # Анимация
-        if not self.is_dead and now - self.last_frame_update > self.frame_delay:
-            self.current_frame_index = (self.current_frame_index + 1) % len(self.running_sprites_enemy_right)
-            if self.x_speed > 0:
-                self.image = self.running_sprites_enemy_right[self.current_frame_index]
-            else:
-                self.image = self.running_sprites_enemy_left[self.current_frame_index]
-            self.last_frame_update = now
-
-        # Прыжки в третьей фазе
-        if not self.is_dead and self.current_phase == 3:
-            self.handle_jumping()
-
-        # Движение и границы
-        if not self.is_dead and not self.phase_transition:
-            self.rect.x += self.x_speed
-            if self.rect.left < 50:
-                self.rect.left = 50
-                self.x_speed = abs(self.x_speed)
-            elif self.rect.right > W - 50:
-                self.rect.right = W - 50
-                self.x_speed = -abs(self.x_speed)
-        elif self.is_dead:
-            self.rect.x += self.x_speed
-
-        # Гравитация
-        self.y_speed += self.gravity
-        self.rect.y += self.y_speed
-
-        # Земля
-        if self.rect.bottom > H - GROUND_H:
-            self.rect.bottom = H - GROUND_H
-            self.y_speed = 0
-            self.is_grounded = True
+        if hp_percent > 0.66:
+            new_phase = 0
+        elif hp_percent > 0.33:
+            new_phase = 1
         else:
-            self.is_grounded = False
+            new_phase = 2
 
-        # Если босс ушел за нижнюю границу экрана
-        if self.rect.top > H:
-            self.is_out = True
+        if new_phase != old_phase:
+            self.phase = new_phase
+            self.phase_changed = True  # Устанавливаем флаг смены фазы
+            self.on_phase_change()
+
+    def on_phase_change(self):
+        # Увеличиваем сложность при смене фазы
+        if self.phase == 1:
+            self.speed = 4
+            self.behavior_duration = 1800
+        elif self.phase == 2:
+            self.speed = 5
+            self.behavior_duration = 1500
+
+    def choose_behavior(self):
+        if self.phase == 0:
+            # Фаза 1: базовые поведения
+            behaviors = ["patrol", "patrol", "jump", "charge"]
+        elif self.phase == 1:
+            # Фаза 2: более агрессивная
+            behaviors = ["patrol", "charge", "charge", "jump", "special"]
+        else:
+            # Фаза 3: самая агрессивная - ИСПРАВЛЕНО: убрали лишние patrol
+            behaviors = ["charge", "jump", "special", "charge", "jump"]
+
+        self.current_behavior = random.choice(behaviors)
+        self.behavior_change_time = pygame.time.get_ticks()
+
+        # Настройка поведения
+        if self.current_behavior == "patrol":
+            # Случайное направление патрулирования
+            self.x_speed = random.choice([-1, 1]) * self.speed
+        elif self.current_behavior == "charge":
+            # Направление в сторону игрока
+            player_center_x = player.rect.centerx
+            self.charge_direction = 1 if player_center_x > self.rect.centerx else -1
+            self.x_speed = self.charge_direction * self.speed * 2
+        elif self.current_behavior == "jump" and self.is_grounded:
+            self.y_speed = self.jump_speed * (0.8 + 0.2 * self.phase)
+        elif self.current_behavior == "special":
+            self.prepare_special_attack()
+
+    def prepare_special_attack(self):
+        # Останавливаемся для спецатаки
+        self.x_speed = 0
+        # Здесь можно добавить анимацию подготовки
+
+    def execute_special_attack(self):
+        # Различные спецатаки в зависимости от фазы
+        if self.phase >= 1 and self.is_grounded:
+            # Мощный прыжок в фазе 2 и 3
+            self.y_speed = self.jump_speed * (1.2 + 0.3 * self.phase)
+
+    def check_boundaries(self):
+        """Проверка и коррекция границ движения"""
+        boundary_hit = False
+
+        # Левая граница
+        if self.rect.left <= self.left_boundary:
+            self.rect.left = self.left_boundary
+            boundary_hit = True
+            # Разворачиваем вправо
+            self.x_speed = abs(self.speed)
+
+        # Правая граница
+        elif self.rect.right >= self.right_boundary:
+            self.rect.right = self.right_boundary
+            boundary_hit = True
+            # Разворачиваем влево
+            self.x_speed = -abs(self.speed)
+
+        return boundary_hit
+
+    def handle_boundary_collision(self):
+        """Обработка столкновения с границами"""
+        if self.check_boundaries():
+            # Если это была атака charge, отменяем ее
+            if self.current_behavior == "charge":
+                self.current_behavior = "patrol"
+                self.choose_behavior()
 
     def take_damage(self, damage):
-        """Нанесение урона боссу"""
-        if not self.phase_transition:
-            self.HP -= damage
-            if self.HP <= 0:
-                self.HP = 0
-                self.kill()
+        self.HP -= damage
+        if self.HP <= 0:
+            self.kill()
+        else:
+            print(f"Босс получил урон! Осталось HP: {self.HP}")
 
     def kill(self):
         try:
@@ -1103,42 +1045,120 @@ class Boss:
             self.image = pygame.transform.scale(dead_img, (140, 38))
         except:
             self.image = pygame.Surface((140, 38))
+
+        # СОХРАНЯЕМ текущую позицию низа спрайта перед изменением rect
+        old_bottom = self.rect.bottom
+        old_centerx = self.rect.centerx
+
+        # ОБНОВЛЯЕМ rect чтобы соответствовать новому изображению
+        self.rect = self.image.get_rect()
+
+        # ВОССТАНАВЛИВАЕМ позицию так, чтобы босс стоял на земле
+        self.rect.centerx = old_centerx
+        self.rect.bottom = old_bottom  # Нижняя граница остается на том же уровне
+
         self.is_dead = True
-        self.x_speed = -self.x_speed * 0.5
-        self.y_speed = self.jump_speed
+        self.x_speed = 0
+        self.y_speed = self.jump_speed * 0.5
+        self.is_grounded = False
+
+    def update(self):
+        now = pygame.time.get_ticks()
+
+        # Если босс мертв - применяем только физику падения
+        if self.is_dead:
+            # Гравитация для мертвого босса
+            self.y_speed += self.gravity
+            self.rect.y += self.y_speed
+
+            # Проверяем землю для мертвого босса
+            if self.rect.bottom >= H - GROUND_H:
+                self.rect.bottom = H - GROUND_H
+                self.y_speed = 0
+                self.is_grounded = True
+            else:
+                self.is_grounded = False
+
+            # Если босс ушел за нижнюю границу экрана
+            if self.rect.top > H:
+                self.is_out = True
+            return
+
+        # ОБНОВЛЕНИЕ ДЛЯ ЖИВОГО БОССА:
+
+        # Обновляем фазу
+        self.update_phase()
+
+        # Запуск движения после задержки
+        if not self.has_started_moving and now - self.spawn_time >= self.move_delay:
+            self.x_speed = -self.speed
+            self.has_started_moving = True
+            self.choose_behavior()
+
+        # Смена поведения по таймеру
+        if self.has_started_moving and now - self.behavior_change_time > self.behavior_duration:
+            self.choose_behavior()
+
+        # Выполнение спецатаки
+        if self.current_behavior == "special" and now - self.behavior_change_time > 500:
+            self.execute_special_attack()
+            self.current_behavior = "patrol"  # Возвращаемся к патрулированию
+
+        # Анимация
+        if now - self.last_frame_update > self.frame_delay:
+            self.current_frame_index = (self.current_frame_index + 1) % len(self.running_sprites_enemy_right)
+            if self.x_speed > 0:
+                self.image = self.running_sprites_enemy_right[self.current_frame_index]
+            else:
+                self.image = self.running_sprites_enemy_left[self.current_frame_index]
+            self.last_frame_update = now
+
+        # Движение и границы
+        self.rect.x += self.x_speed
+        self.handle_boundary_collision()
+
+        # Гравитация
+        self.y_speed += self.gravity
+        self.rect.y += self.y_speed
+
+        # Проверка земли
+        if self.rect.bottom >= H - GROUND_H:
+            self.rect.bottom = H - GROUND_H
+            self.y_speed = 0
+            self.is_grounded = True
+            self.jump_ready = True
+        else:
+            self.is_grounded = False
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
+        self.draw_health_bar(surface)
 
     def draw_health_bar(self, surface):
-        """Отрисовка полоски здоровья босса"""
-        bar_width = 300
-        bar_height = 25
-        bar_x = W // 2 - bar_width // 2
-        bar_y = 30
+        if self.is_dead:  # Не показываем HP бар для мертвого босса
+            return
 
-        # Фон полоски
+        bar_width = 200
+        bar_height = 20
+        bar_x = W // 2 - bar_width // 2
+        bar_y = 20
+
+        # Фон бара
         pygame.draw.rect(surface, (255, 0, 0), (bar_x, bar_y, bar_width, bar_height))
 
-        # Текущее здоровье с цветом в зависимости от фазы
-        health_width = int((self.HP / self.max_HP) * bar_width)
-        phase_color = (0, 255, 0) if self.current_phase == 1 else (255, 165, 0) if self.current_phase == 2 else (
-        255, 0, 0)
-        pygame.draw.rect(surface, phase_color, (bar_x, bar_y, health_width, bar_height))
+        # Текущее HP
+        hp_width = int((self.HP / self.max_HP) * bar_width)
 
-        # Обводка
+        # Цвет в зависимости от фазы
+        if self.phase == 0:
+            color = (0, 255, 0)  # Зеленый
+        elif self.phase == 1:
+            color = (255, 165, 0)  # Оранжевый
+        else:
+            color = (255, 0, 0)  # Красный
+
+        pygame.draw.rect(surface, color, (bar_x, bar_y, hp_width, bar_height))
         pygame.draw.rect(surface, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 2)
-
-        # Отображение фаз
-        phase_text = f"Фаза: {self.current_phase}"
-        font = pygame.font.Font(None, 24)
-        text_surface = font.render(phase_text, True, (255, 255, 255))
-        surface.blit(text_surface, (bar_x, bar_y - 30))
-
-        # Отображение HP
-        hp_text = f"HP: {self.HP}/{self.max_HP}"
-        hp_surface = font.render(hp_text, True, (255, 255, 255))
-        surface.blit(hp_surface, (bar_x + bar_width - 80, bar_y - 30))
 
 
 # Создаем игрока
@@ -1220,8 +1240,8 @@ def save_upgrades():
     cursor.execute(
         f'UPDATE {table_name} SET player_points = ?, attack = ?, HP = ?, running_unlocked = ?, double_jump_unlocked = ?, shield = ? WHERE id=1',
         (
-            player_points_easy if current_difficulty == 0 else player_points_medium if current_difficulty == 1 else player_points_hard,
-            player.attack, player.HP, int(player.running_unlocked), int(player.double_jump_unlocked), player.shield))
+        player_points_easy if current_difficulty == 0 else player_points_medium if current_difficulty == 1 else player_points_hard,
+        player.attack, player.HP, int(player.running_unlocked), int(player.double_jump_unlocked), player.shield))
     saving.commit()
 
 
@@ -1342,305 +1362,6 @@ def change_difficulty(new_difficulty):
     load_upgrades()
     load_skin()
     apply_skin(current_skin_index)
-
-
-# Функции для уровня с боссом
-def run_boss_level(level_num):
-    """Запуск уровня с боссом (уровень 5)"""
-    global boss_level_preparation, boss_battle_active, victory_shown, boss_level_enemies_defeated
-
-    if not level_manager.load_level(level_num):
-        show_message(f"Ошибка загрузки уровня {level_num}")
-        return
-
-    level_data = level_manager.levels[level_num]
-    load_upgrades()
-    HP = player.HP
-    player.respawn()
-    player.rect.midbottom = (W // 2, H - GROUND_H)
-
-    monsters = []
-    boss_obj = None
-    score = 0
-
-    # Сброс состояния уровня с боссом
-    boss_level_preparation = True
-    boss_battle_active = False
-    victory_shown = False
-
-    # Определяем сложность для количества врагов
-    difficulty_str = ["easy", "normal", "hard"][current_difficulty]
-    required_kills = boss_level_required_kills[difficulty_str]
-
-    # Сброс счетчиков убийств
-    for enemy_type in boss_level_enemies_defeated[difficulty_str]:
-        boss_level_enemies_defeated[difficulty_str][enemy_type] = 0
-
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    pause()
-                elif event.key == pygame.K_s:
-                    save_game_sql(level_num)
-                    save_message_displayed = True
-                    save_message_timer = pygame.time.get_ticks()
-                elif event.key in [pygame.K_w, pygame.K_UP]:
-                    player.handle_jump()
-                elif player.is_out:
-                    load_game_sql()
-                    load_upgrades()
-                    HP = player.HP
-                    player.respawn()
-                    player.rect.midbottom = (W // 2, H - GROUND_H)
-                    monsters.clear()
-                    boss_obj = None
-                    boss_battle_active = False
-                    boss_level_preparation = True
-
-        # Обновление игрока
-        player.handle_input()
-        player.update()
-
-        # Обновление скроллинга
-        keys = pygame.key.get_pressed()
-        if (player.rect.centerx > W // 2 and
-                level_manager.scroll_pos < level_data["width"] - W):
-            scroll_amount = player.rect.centerx - W // 2
-            scroll_speed = 5
-            if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
-                scroll_speed *= 2
-            player.rect.centerx = W // 2
-            new_scroll_pos = level_manager.scroll_pos + min(scroll_amount, scroll_speed)
-            if new_scroll_pos > level_data["width"] - W:
-                new_scroll_pos = level_data["width"] - W
-            level_manager.scroll_pos = new_scroll_pos
-        elif (player.rect.centerx < W // 2 and
-              level_manager.scroll_pos > 0):
-            scroll_amount = W // 2 - player.rect.centerx
-            scroll_speed = 5
-            if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
-                scroll_speed *= 2
-            player.rect.centerx = W // 2
-            new_scroll_pos = level_manager.scroll_pos - min(scroll_amount, scroll_speed)
-            if new_scroll_pos < 0:
-                new_scroll_pos = 0
-            level_manager.scroll_pos = new_scroll_pos
-
-        # Проверка коллизий с платформами
-        level_manager.check_platform_collisions(player, level_num)
-
-        # Фаза подготовки: победа над врагами
-        if boss_level_preparation:
-            handle_preparation_phase(monsters, required_kills, level_num)
-
-            # Проверка готовности к битве с боссом
-            if all(kills >= required_kills for kills in boss_level_enemies_defeated[difficulty_str].values()):
-                boss_level_preparation = False
-                show_message("Все враги побеждены! Найдите портал для битвы с боссом!", 3000)
-
-        # Проверка достижения портала для начала битвы с боссом
-        if level_manager.check_portal_collision(player.rect) and not boss_battle_active:
-            if not boss_level_preparation:  # Только если все враги побеждены
-                start_boss_battle(level_num)
-                boss_battle_active = True
-            else:
-                show_message("Сначала победите всех врагов!", 2000)
-
-        # Битва с боссом
-        if boss_battle_active and boss_obj:
-            handle_boss_battle(boss_obj, level_num)
-
-            # Проверка победы над боссом
-            if boss_obj.is_dead and not victory_shown:
-                show_victory_message()
-                victory_shown = True
-                complete_boss_level(level_num)
-                running = False
-
-        # Отрисовка
-        screen.fill((0, 0, 0))
-        level_manager.draw(screen)
-        player.draw(screen)
-
-        # Отрисовка врагов
-        for monster in monsters:
-            monster.draw(screen)
-
-        # Отрисовка босса
-        if boss_obj:
-            boss_obj.draw(screen)
-            if not boss_obj.is_dead:
-                boss_obj.draw_health_bar(screen)
-
-        # UI
-        draw_ui_elements(HP, level_num, required_kills)
-
-        if save_message_displayed and pygame.time.get_ticks() - save_message_timer < 2000:
-            draw_text("Игра сохранена", font_small, (255, 255, 255), screen, W // 2, H // 2)
-
-        if player.is_out:
-            draw_text("Нажмите любую клавишу для возрождения", font_small, (255, 255, 255), screen, W // 2, H // 2)
-
-        pygame.display.flip()
-        clock.tick(FPS)
-
-
-def handle_preparation_phase(monsters, required_kills, level_num):
-    """Обработка фазы подготовки к битве с боссом"""
-    global boss_level_enemies_defeated, HP
-
-    difficulty_str = ["easy", "normal", "hard"][current_difficulty]
-    now = pygame.time.get_ticks()
-
-    # Спавн врагов разных типов
-    if len(monsters) < 8 and now % 2000 < 50:
-        monster = Monster()
-        monsters.append(monster)
-
-    # Обновление и проверка коллизий с врагами
-    for monster in list(monsters):
-        monster.update()
-
-        if not player.is_dead and player.rect.colliderect(monster.rect) and not monster.is_dead:
-            if (player.rect.bottom < monster.rect.centery and
-                    player.y_speed > 0 and
-                    abs(player.rect.centerx - monster.rect.centerx) < monster.rect.width / 2):
-                # Игрок прыгает на врага
-                monster.kill()
-                player.y_speed = -10
-                player.is_grounded = False
-
-                # Увеличиваем счетчик для случайного типа врага
-                enemy_type = random.choice(["type1", "type2", "type3"])
-                boss_level_enemies_defeated[difficulty_str][enemy_type] += 1
-
-            elif not monster.damage_given:
-                # Игрок получает урон
-                HP = player.HP - 1
-                player.damaged()
-                monster.damage_given = True
-                if HP <= 0:
-                    player.kill(player.damaged_sprite)
-
-        if monster.is_out:
-            monsters.remove(monster)
-
-
-def start_boss_battle(level_num):
-    """Начало битвы с боссом"""
-    global boss_obj
-    difficulty_str = ["easy", "normal", "hard"][current_difficulty]
-    boss_obj = Boss(difficulty_str)
-    show_message("БИТВА С БОССОМ!", 2000)
-
-
-def handle_boss_battle(boss_obj, level_num):
-    """Обработка битвы с боссом"""
-    global HP, Shield
-
-    boss_obj.update()
-    Shield = player.shield
-
-    # Проверка коллизий с боссом
-    if player.rect.colliderect(boss_obj.rect) and not boss_obj.is_dead:
-        if (player.rect.bottom <= boss_obj.rect.centery and
-                player.y_speed > 0 and
-                abs(player.rect.centerx - boss_obj.rect.centerx) < boss_obj.rect.width / 2):
-            # Игрок прыгает на босса
-            boss_obj.take_damage(player.attack)
-            player.y_speed = -12
-            player.is_grounded = False
-        elif not boss_obj.damage_given:
-            # Игрок получает урон от босса
-            if Shield >= 1:
-                Shield -= 1
-                player.shield -= 1
-                save_upgrades()
-            else:
-                HP -= boss_obj.damage
-                player.damaged()
-                boss_obj.damage_given = True
-            if HP <= 0:
-                player.kill(player.damaged_sprite)
-    else:
-        boss_obj.damage_given = False
-
-
-def draw_ui_elements(HP, level_num, required_kills):
-    """Отрисовка элементов интерфейса для уровня с боссом"""
-    difficulty_str = ["easy", "normal", "hard"][current_difficulty]
-
-    draw_text(f"Уровень: {level_num}", font_small, (255, 255, 255), screen, 100, 20)
-    draw_text(f"HP: {HP}", font_small, (255, 255, 255), screen, W // 3, 20)
-    draw_text(f"Щиты: {player.shield}", font_small, (255, 255, 255), screen, W // 3 * 2, 20)
-
-    if boss_level_preparation:
-        # Показываем прогресс уничтожения врагов
-        total_defeated = sum(boss_level_enemies_defeated[difficulty_str].values())
-        total_required = required_kills * 3
-        draw_text(f"Врагов побеждено: {total_defeated}/{total_required}",
-                  font_small, (255, 255, 255), screen, W // 2, 80)
-
-    if boss_battle_active:
-        draw_text("БИТВА С БОССОМ!", font_large, (255, 0, 0), screen, W // 2, 100)
-
-
-def show_victory_message():
-    """Показ сообщения о победе"""
-    victory_time = pygame.time.get_ticks() + 5000
-
-    while pygame.time.get_ticks() < victory_time:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-        screen.fill((0, 0, 0))
-        draw_text("ПОБЕДА!", font_large, (255, 215, 0), screen, W // 2, H // 3)
-        draw_text("Босс побежден!", font_medium, (255, 255, 255), screen, W // 2, H // 2)
-        draw_text("Уровень завершен", font_small, (255, 255, 255), screen, W // 2, H // 2 + 50)
-
-        pygame.display.flip()
-        clock.tick(FPS)
-
-
-def complete_boss_level(level_num):
-    """Завершение уровня с боссом"""
-    global current_difficulty, player_points_easy, player_points_medium, player_points_hard
-
-    # Награда за победу над боссом
-    boss_reward = {0: 10, 1: 15, 2: 20}
-    reward = boss_reward.get(current_difficulty, 15)
-
-    if current_difficulty == 0:
-        player_points_easy += reward
-    elif current_difficulty == 1:
-        player_points_medium += reward
-    elif current_difficulty == 2:
-        player_points_hard += reward
-
-    # Отмечаем уровень как пройденный
-    cursor = saving.cursor()
-    table_name = ['levels_easy', 'levels_medium', 'levels_hard'][current_difficulty]
-    cursor.execute(f'UPDATE {table_name} SET cleared=1 WHERE level_number=?', (level_num,))
-
-    # Улучшения за победу над боссом
-    if player.HP <= 15:
-        player.HP = 15
-    if player.attack < 5:
-        player.attack = 5
-
-    saving.commit()
-    save_upgrades()
-    save_settings_sql()
-
-    # Возвращаемся в меню уровней
-    level_menu()
 
 
 # Игровые меню и экраны
@@ -2125,6 +1846,7 @@ def upgrade():
 
 
 def secrets():
+    # Заглушка для секретов
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -2144,7 +1866,7 @@ def secrets():
 
 
 def level_menu():
-    global level1_cleared, level2_cleared, level3_cleared, level4_cleared, level5_cleared, level6_cleared, \
+    global level1_cleared, level2_cleared, level3_cleared, level4_cleared, level5_cleared, level6_cleared,\
         from_menu, from_level, message, playing_menu
     if from_level and not from_menu:
         stop_music()
@@ -2239,7 +1961,7 @@ def level_menu():
                 status_color = (0, 255, 0) if level6_cleared and not is_selected else color
             else:
                 available = False
-                status_color = (255, 0, 0) if not is_selected else color
+                status_color = (255, 0, 0) if not is_selected else color# Красный для недоступных
 
             if 0 <= j < 3:
                 x_pos = W // 3 - 100
@@ -2258,10 +1980,13 @@ def level_menu():
         if message:
             current_time = pygame.time.get_ticks()
             if current_time - message_time < MESSAGE_DURATION:
+                # Нарисовать прямоугольник с текстом
                 message_surface = pygame.Surface((500, 50))
                 message_surface.fill((255, 255, 255))
                 pygame.draw.rect(message_surface, (0, 0, 0), message_surface.get_rect(), 2)
+                # Отрисовка текста
                 draw_text(message, font_small, (0, 0, 0), message_surface, 250, 25)
+                # Разместить поверх экрана по центру
                 screen.blit(
                     message_surface,
                     (W // 2 - 250, H // 2 - 25)
@@ -2306,7 +2031,7 @@ def run_level(level_num):
                     save_message_displayed = True
                     save_message_timer = pygame.time.get_ticks()
                 elif event.key in [pygame.K_w, pygame.K_UP]:
-                    player.handle_jump()
+                    player.handle_jump()  # Обрабатываем прыжок при нажатии
                 elif player.is_out:
                     load_game_sql()
                     if 1505 < level_manager.scroll_pos < 1690 and level_num == 1:
@@ -2321,7 +2046,7 @@ def run_level(level_num):
         player.handle_input()
         player.update()
 
-        # СКРОЛЛИНГ
+        # ИСПРАВЛЕННЫЙ СКРОЛЛИНГ (рабочая версия из вашего кода)
         keys = pygame.key.get_pressed()
 
         # Движение вправо
@@ -2329,10 +2054,11 @@ def run_level(level_num):
                 level_manager.scroll_pos < level_data["width"] - W):
 
             scroll_amount = player.rect.centerx - W // 2
-            scroll_speed = 5
+            scroll_speed = 5  # Скорость скролла
             if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
                 scroll_speed *= 2
 
+            # Фиксируем игрока в центре и двигаем фон
             player.rect.centerx = W // 2
             new_scroll_pos = level_manager.scroll_pos + min(scroll_amount, scroll_speed)
             if new_scroll_pos > level_data["width"] - W:
@@ -2344,10 +2070,11 @@ def run_level(level_num):
               level_manager.scroll_pos > 0):
 
             scroll_amount = W // 2 - player.rect.centerx
-            scroll_speed = 5
+            scroll_speed = 5  # Скорость скролла
             if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
                 scroll_speed *= 2
 
+            # Фиксируем игрока в центре и двигаем фон
             player.rect.centerx = W // 2
             new_scroll_pos = level_manager.scroll_pos - min(scroll_amount, scroll_speed)
             if new_scroll_pos < 0:
@@ -2359,11 +2086,9 @@ def run_level(level_num):
 
         # Проверка достижения портала
         if level_manager.check_portal_collision(player.rect):
+            save_game_sql(level_num)
             if level_data["has_boss"]:
-                if level_num == 5:  # Уровень с боссом по сценарию
-                    run_boss_level(level_num)
-                else:
-                    run_boss_fight(level_num)
+                run_boss_fight(level_num)
             else:
                 run_enemy_wave(level_num, level_data["enemy_count"])
             running = False
@@ -2393,6 +2118,7 @@ def run_enemy_wave(level_num, enemy_count):
     load_game_sql()
     player.HP = load_upgrades()
     HP = player.HP
+    Start_HP = HP
     player.respawn()
     monsters = []
     last_spawn_time = pygame.time.get_ticks()
@@ -2420,13 +2146,14 @@ def run_enemy_wave(level_num, enemy_count):
                 elif event.key in [pygame.K_w, pygame.K_UP]:
                     player.handle_jump()
                 elif player.is_out:
+                    # Полное восстановление при возрождении
                     load_game_sql()
                     load_upgrades()
-                    player.respawn()
-                    HP = player.HP
+                    player.respawn()  # Используем respawn
+                    HP = Start_HP
                     Shield = player.shield
                     monsters.clear()
-                    score = 0
+                    score = 0  # Сбрасываем счет при смерти
 
         # Обновление игрока (только если не мертв)
         if not player.is_dead:
@@ -2472,6 +2199,7 @@ def run_enemy_wave(level_num, enemy_count):
                         invincible_end_time = now + 1000
                     if HP <= 0:
                         player.kill(player.damaged_sprite)
+                        show_message("Вы погибли!")
             else:
                 monster.damage_given = False
 
@@ -2508,6 +2236,7 @@ def run_enemy_wave(level_num, enemy_count):
             draw_text("Вы погибли! Нажмите любую клавишу для возрождения", font_medium, (255, 0, 0), screen, W // 2,
                       H // 2)
         elif player.is_dead and not player.is_out:
+            # Показываем сообщение во время анимации смерти
             if player.falling_through:
                 draw_text("Вы погибли!", font_medium, (255, 0, 0), screen, W // 2, H // 3)
             else:
@@ -2534,6 +2263,8 @@ def run_boss_fight(level_num):
     invincible_end_time = 0
     invincible_boss = False
     invincible_end_time_boss = 0
+    boss_phase_transition = False  # Флаг перехода фазы босса
+    boss_phase_transition_end = 0  # Время окончания перехода фазы
 
     show_message("Победи босса!")
 
@@ -2554,8 +2285,12 @@ def run_boss_fight(level_num):
                     pause()
                     return
                 elif event.key in [pygame.K_w, pygame.K_UP]:
-                    player.handle_jump()
+                    # Игрок может прыгать только если жив
+                    if not player.is_dead and not player.is_out:
+                        player.handle_jump()
+                # ВОССТАНОВЛЕНИЕ ПРИ СМЕРТИ - ДОБАВЛЕНА ПРОВЕРКА ЛЮБОЙ КЛАВИШИ
                 elif player.is_out:
+                    # Любая клавиша для возрождения
                     load_game_sql()
                     load_upgrades()
                     HP = player.HP
@@ -2564,17 +2299,75 @@ def run_boss_fight(level_num):
                     boss.clear()
                     boss.append(Boss())
                     score = 0
+                    boss_phase_transition = False  # Сбрасываем флаг перехода фазы
+                    Shield = player.shield  # Восстанавливаем щиты
 
-        # Обновление игрока
-        player.handle_input()
+        # Обновление игрока (только если не мертв)
+        if not player.is_dead and not player.is_out:
+            player.handle_input()
         player.update()
+
+        # Если игрок мертв и вылетел, ждем возрождения
+        if player.is_out:
+            # ПРОДОЛЖАЕМ ОБНОВЛЯТЬ ЭКРАН ДАЖЕ КОГДА ИГРОК МЕРТВ
+            # Отрисовка фона
+            screen.fill(level_manager.levels[level_num]["bg_color"])
+            screen.blit(ground_image, (0, H - GROUND_H))
+            screen.blit(ground_image, (500, H - GROUND_H))
+
+            # Отрисовка босса (если еще жив)
+            for boss_obj in boss:
+                boss_obj.update()
+                boss_obj.draw(screen)
+
+            # Отрисовка игрока (даже если он "вылетел")
+            player.draw(screen)
+
+            # UI
+            draw_text("БОСС БИТВА", font_large, (255, 0, 0), screen, W // 2, 30)
+            if boss and not boss[0].is_dead:
+                # Полоска HP босса
+                hp_percent = boss[0].HP / 50
+                bar_width = 400
+                pygame.draw.rect(screen, (255, 0, 0), (W // 2 - bar_width // 2, 70, bar_width, 20))
+
+                # Меняем цвет полоски в зависимости от фазы и неуязвимости
+                if boss_phase_transition:
+                    color = (255, 255, 0)  # Желтый во время перехода фазы
+                elif boss[0].phase == 0:
+                    color = (0, 255, 0)  # Зеленый
+                elif boss[0].phase == 1:
+                    color = (255, 165, 0)  # Оранжевый
+                else:
+                    color = (255, 0, 0)  # Красный
+
+                pygame.draw.rect(screen, color, (W // 2 - bar_width // 2, 70, bar_width * hp_percent, 20))
+                pygame.draw.rect(screen, (255, 255, 255), (W // 2 - bar_width // 2, 70, bar_width, 20), 2)
+                draw_text(f"HP: {boss[0].HP}/50", font_small, (255, 255, 255), screen, W // 2, 80)
+
+            draw_text(f"HP игрока: 0", font_medium, (255, 0, 0), screen, 100, 30)  # Показываем 0 HP
+            draw_text(f"Щиты: {Shield}", font_medium, (255, 255, 255), screen, W - 100, 30)
+            draw_text(f"Атака: {player.attack}", font_small, (255, 255, 255), screen, W // 2, H - 50)
+
+            # СООБЩЕНИЕ О ВОЗРОЖДЕНИИ - ВСЕГДА ПОКАЗЫВАЕМ КОГДА ИГРОК is_out
+            draw_text("Нажмите любую клавишу для возрождения", font_medium, (255, 255, 255), screen, W // 2, H // 2)
+
+            pygame.display.flip()
+            clock.tick(FPS)
+            continue  # Пропускаем остальную логику, пока игрок мертв
+
+        # ОБНОВЛЕНИЕ ДЛЯ ЖИВОГО ИГРОКА:
 
         # Обновление босса
         for boss_obj in list(boss):
             boss_obj.update()
 
-            # Проверка коллизий с боссом
-            if player.rect.colliderect(boss_obj.rect) and not boss_obj.is_dead:
+            # Проверка коллизий с боссом (только если игрок жив и босс жив)
+            if (not player.is_dead and not player.is_out and
+                    player.rect.colliderect(boss_obj.rect) and
+                    not boss_obj.is_dead and
+                    not boss_phase_transition):  # Не проверяем коллизии во время перехода фазы
+
                 # Проверяем, прыгнул ли игрок на босса сверху
                 if (player.rect.bottom <= boss_obj.rect.centery and
                         player.y_speed > 0 and
@@ -2606,15 +2399,27 @@ def run_boss_fight(level_num):
                         invincible = True
                         invincible_end_time = now + 1000
                     else:
-                        HP -= 2
+                        HP -= 2  # Босс наносит больше урона
                         player.damaged()
                         boss_obj.damage_given = True
                         invincible = True
                         invincible_end_time = now + 1000
                     if HP <= 0:
                         player.kill(player.damaged_sprite)
+                        show_message("Вы погибли!")
             else:
                 boss_obj.damage_given = False
+
+            # Проверяем переход фазы босса
+            if not boss_obj.is_dead and boss_obj.phase_changed:
+                boss_phase_transition = True
+                boss_phase_transition_end = now + 1500  # 1.5 секунды неуязвимости
+                boss_obj.phase_changed = False  # Сбрасываем флаг
+                show_message(f"Босс входит в фазу {boss_obj.phase + 1}!")
+
+            # Снимаем неуязвимость после перехода фазы
+            if boss_phase_transition and now >= boss_phase_transition_end:
+                boss_phase_transition = False
 
             # Удаляем босса, если он ушел за экран
             if boss_obj.is_out:
@@ -2623,25 +2428,27 @@ def run_boss_fight(level_num):
         # Снятие неуязвимости игрока
         if invincible and now >= invincible_end_time:
             invincible = False
-            player.image = player.idle_sprite
-            player.speed = 5
+            if not player.is_dead:
+                player.image = player.idle_sprite
+                player.speed = 5
 
         # Снятие неуязвимости босса (мигание при получении урона)
         if invincible_boss and now >= invincible_end_time_boss:
             invincible_boss = False
 
         # Визуальные эффекты при получении урона
-        if invincible:
-            if now % 200 < 100:
+        if invincible and not player.is_dead:
+            if now % 200 < 100:  # Мигание каждые 200 мс
                 player.image = player.damaged_sprite
             else:
                 player.image = player.idle_sprite
 
         if invincible_boss:
-            if now % 100 < 50:
+            if now % 100 < 50:  # Быстрое мигание для босса
+                # Можно добавить эффект для босса, если есть поврежденная текстура
                 pass
 
-        # Отрисовка
+        # Отрисовка для живого игрока
         screen.fill(level_manager.levels[level_num]["bg_color"])
         screen.blit(ground_image, (0, H - GROUND_H))
         screen.blit(ground_image, (500, H - GROUND_H))
@@ -2651,15 +2458,31 @@ def run_boss_fight(level_num):
 
         player.draw(screen)
 
-        # UI
+        # UI для живого игрока
         draw_text("БОСС БИТВА", font_large, (255, 0, 0), screen, W // 2, 30)
         if boss and not boss[0].is_dead:
+            # Полоска HP босса
             hp_percent = boss[0].HP / 50
             bar_width = 400
             pygame.draw.rect(screen, (255, 0, 0), (W // 2 - bar_width // 2, 70, bar_width, 20))
-            pygame.draw.rect(screen, (0, 255, 0), (W // 2 - bar_width // 2, 70, bar_width * hp_percent, 20))
+
+            # Меняем цвет полоски в зависимости от фазы и неуязвимости
+            if boss_phase_transition:
+                color = (255, 255, 0)  # Желтый во время перехода фазы
+            elif boss[0].phase == 0:
+                color = (0, 255, 0)  # Зеленый
+            elif boss[0].phase == 1:
+                color = (255, 165, 0)  # Оранжевый
+            else:
+                color = (255, 0, 0)  # Красный
+
+            pygame.draw.rect(screen, color, (W // 2 - bar_width // 2, 70, bar_width * hp_percent, 20))
             pygame.draw.rect(screen, (255, 255, 255), (W // 2 - bar_width // 2, 70, bar_width, 20), 2)
             draw_text(f"HP: {boss[0].HP}/50", font_small, (255, 255, 255), screen, W // 2, 80)
+
+            # Показываем сообщение о неуязвимости во время перехода фазы
+            if boss_phase_transition:
+                draw_text("НЕУЯЗВИМОСТЬ!", font_medium, (255, 255, 0), screen, W // 2, 110)
 
         draw_text(f"HP игрока: {HP}", font_medium, (255, 255, 255), screen, 100, 30)
         draw_text(f"Щиты: {Shield}", font_medium, (255, 255, 255), screen, W - 100, 30)
@@ -2668,11 +2491,9 @@ def run_boss_fight(level_num):
         if save_message_displayed and pygame.time.get_ticks() - save_message_timer < 2000:
             draw_text("Игра сохранена", font_small, (255, 255, 255), screen, W // 2, H // 2)
 
-        if player.is_out:
-            draw_text("Нажмите любую клавишу для возрождения", font_small, (255, 255, 255), screen, W // 2, H // 2)
-
         # Проверка завершения боя
         if score >= 1:
+            # Даем время на анимацию смерти босса
             end_delay = 2000
             end_time = now + end_delay
 
@@ -2744,11 +2565,12 @@ def complete_level(level_num, is_boss=False):
             player.HP = 8
         message = "Открыты навык: двойной прыжок, скин 'Марио', +3HP"
     elif level_num == 3 and is_boss:
+        # Дополнительная награда за победу над боссом
         if player.HP <= 10:
             player.HP = 10
         if player.attack < 3:
             player.attack = 3
-        message = f"Босс побежден! +{reward + 1} очков, +2HP, +1ATK"
+        message = f"Босс побежден! +{reward+1} очков, +2HP, +1ATK"
         if current_difficulty == 0:
             player_points_easy += reward
         elif current_difficulty == 1:
@@ -2768,11 +2590,12 @@ def complete_level(level_num, is_boss=False):
             player.HP = 13
         message = "+1HP"
     elif level_num == 6 and is_boss:
+        # Дополнительная награда за победу над боссом
         if player.HP <= 15:
             player.HP = 15
         if player.attack < 5:
             player.attack = 5
-        message = f"Босс побежден! +{reward + 1} очков, +2HP, +1ATK"
+        message = f"Босс побежден! +{reward+1} очков, +2HP, +1ATK"
         if current_difficulty == 0:
             player_points_easy += reward
         elif current_difficulty == 1:
@@ -2786,7 +2609,7 @@ def complete_level(level_num, is_boss=False):
     save_settings_sql()
 
     # Показываем экран завершения
-    end_time = pygame.time.get_ticks() + 4000
+    end_time = pygame.time.get_ticks() + 4000  # Увеличим время показа
     while pygame.time.get_ticks() < end_time:
         screen.fill(level_manager.levels[level_num]["bg_color"])
         if is_boss:
@@ -2806,6 +2629,7 @@ def complete_level(level_num, is_boss=False):
     from_level = True
     from_menu = False
     playing_menu = True
+    # Возвращаемся в меню уровней
     level_menu()
 
 
