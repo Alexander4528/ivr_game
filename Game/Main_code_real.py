@@ -13,10 +13,12 @@ try:
     font_large = pygame.font.Font(font_path, 48)
     font_medium = pygame.font.Font(font_path, 36)
     font_small = pygame.font.Font(font_path, 24)
+    font_dialogue = pygame.font.Font(font_path, 20)
 except:
     font_large = pygame.font.SysFont("arial", 48)
     font_medium = pygame.font.SysFont("arial", 36)
     font_small = pygame.font.SysFont("arial", 24)
+    font_dialogue = pygame.font.SysFont("arial", 20)
 
 # Игровые переменные
 player_points_easy = 0
@@ -119,15 +121,32 @@ except:
     secret_heart_image = pygame.Surface((35, 35))
     secret_heart_image.fill((255, 0, 0))
 
+# Загрузка изображений для катсцен
+try:
+    parents_image = pygame.image.load("Sprites and objects/Parents/parents.png")
+    parents_image = pygame.transform.scale(parents_image, (400, 300))
+except:
+    parents_image = pygame.Surface((400, 300))
+    parents_image.fill((150, 150, 200))
+
+try:
+    home_background = pygame.image.load("Sprites and objects/Objects, background and other/home_bg.png")
+    home_background = pygame.transform.scale(home_background, (W, H))
+except:
+    home_background = pygame.Surface((W, H))
+    home_background.fill((180, 160, 140))
+
 # Настройки звука
 music_on = True
 sound_on = True
 music_playing = False
 menu_music = "Music/day_of_chaos.mp3"
 level_1_part_1_music = "Music/kevin-macleod-machine.mp3"
-level_2_part_1_music = "Music/Geometry_Dash_-_Geometrical_Dominator_67148396.mp3"
+level_2_part_1_music = "Music/Echoes-of-Time-v2(chosic.com).mp3"
 level_3_part_1_music = "Music/riding-into-the-sunset-20240527-202603.mp3"
 level_4_part_1_music = "Music/Ghost-Story(chosic.com).mp3"
+level_5_part_1_music = "Music/Horror-Long-Version(chosic.com).mp3"
+level_6_part_1_music = "Music/Starset_-_My_Demons_56774126.mp3"
 
 try:
     Unlock_skin_sound = pygame.mixer.Sound("Sounds/mixkit-unlock-new-item-game-notification-254.wav")
@@ -157,6 +176,358 @@ level4_cleared = False
 level5_cleared = False
 level6_cleared = False
 Level = 1
+
+
+# Система катсцен
+class CutsceneManager:
+    def __init__(self):
+        self.current_cutscene = None
+        self.current_dialogue_index = 0
+        self.dialogue_timer = 0
+        self.dialogue_speed = 2  # Символов за кадр
+        self.current_text = ""
+        self.full_text = ""
+        self.show_skip_prompt = False
+        self.skip_prompt_timer = 0
+
+    def start_cutscene(self, cutscene_data):
+        self.current_cutscene = cutscene_data
+        self.current_dialogue_index = 0
+        self.dialogue_timer = 0
+        self.current_text = ""
+        self.full_text = ""
+        self.show_skip_prompt = False
+        self.skip_prompt_timer = 0
+
+        if self.current_cutscene and self.current_dialogue_index < len(self.current_cutscene["dialogues"]):
+            self.full_text = self.current_cutscene["dialogues"][self.current_dialogue_index]["text"]
+
+    def update(self):
+        if not self.current_cutscene:
+            return False
+
+        # Показ подсказки пропуска
+        self.skip_prompt_timer += 1
+        if self.skip_prompt_timer > 60:  # Показывать через 1 секунду
+            self.show_skip_prompt = True
+
+        # Постепенное появление текста
+        if len(self.current_text) < len(self.full_text):
+            self.dialogue_timer += 1
+            if self.dialogue_timer >= self.dialogue_speed:
+                self.dialogue_timer = 0
+                self.current_text = self.full_text[:len(self.current_text) + 1]
+
+        return True
+
+    def next_dialogue(self):
+        if not self.current_cutscene:
+            return False
+
+        self.current_dialogue_index += 1
+        if self.current_dialogue_index < len(self.current_cutscene["dialogues"]):
+            self.current_text = ""
+            self.full_text = self.current_cutscene["dialogues"][self.current_dialogue_index]["text"]
+            return True
+        else:
+            self.current_cutscene = None
+            return False
+
+    def skip(self):
+        if self.current_cutscene and self.current_dialogue_index < len(self.current_cutscene["dialogues"]):
+            # Показываем весь текст текущей реплики
+            self.current_text = self.full_text
+
+    def finish_current(self):
+        if self.current_cutscene and self.current_dialogue_index < len(self.current_cutscene["dialogues"]):
+            if len(self.current_text) < len(self.full_text):
+                # Показываем весь текст текущей реплики
+                self.current_text = self.full_text
+                return True
+            else:
+                # Переходим к следующей реплике
+                return self.next_dialogue()
+        return False
+
+    def wrap_text(self, text, font, max_width):
+        words = text.split(' ')
+        lines = []
+        current_line = []
+
+        for word in words:
+            test_line = ' '.join(current_line + [word])
+            test_width = font.size(test_line)[0]
+
+            if test_width <= max_width:
+                current_line.append(word)
+            else:
+                lines.append(' '.join(current_line))
+                current_line = [word]
+
+        if current_line:
+            lines.append(' '.join(current_line))
+
+        return lines
+
+    def draw(self, screen):
+        if not self.current_cutscene:
+            return
+
+        # Фон катсцены
+        if self.current_cutscene["background"]:
+            screen.blit(self.current_cutscene["background"], (0, 0))
+        else:
+            screen.fill((0, 0, 0))
+
+        # Текущий диалог
+        dialogue = self.current_cutscene["dialogues"][self.current_dialogue_index]
+
+        # Отрисовка персонажа (если есть)
+        if dialogue.get("character_image"):
+            char_img = dialogue["character_image"]
+            char_rect = char_img.get_rect(center=(W // 2, H // 3))
+            screen.blit(char_img, char_rect)
+
+        # Окно диалога
+        dialog_rect = pygame.Rect(50, H - 200, W - 100, 150)
+        pygame.draw.rect(screen, (0, 0, 0, 180), dialog_rect)
+        pygame.draw.rect(screen, (255, 255, 255), dialog_rect, 2)
+
+        # Имя персонажа
+        name_text = font_dialogue.render(dialogue["character"], True, (255, 215, 0))
+        screen.blit(name_text, (dialog_rect.x + 20, dialog_rect.y + 15))
+
+        # Текст диалога
+        text_lines = self.wrap_text(self.current_text, font_dialogue, dialog_rect.width - 40)
+        for i, line in enumerate(text_lines):
+            text_surface = font_dialogue.render(line, True, (255, 255, 255))
+            screen.blit(text_surface, (dialog_rect.x + 20, dialog_rect.y + 50 + i * 30))
+
+        # Индикатор продолжения (если весь текст показан)
+        if len(self.current_text) >= len(self.full_text):
+            continue_text = font_small.render("Нажмите ПРОБЕЛ для продолжения...", True, (200, 200, 200))
+            screen.blit(continue_text, (dialog_rect.centerx - continue_text.get_width() // 2, dialog_rect.bottom - 30))
+
+        # Подсказка пропуска
+        if self.show_skip_prompt:
+            skip_text = font_small.render("Нажмите ESC для пропуска катсцены", True, (150, 150, 150))
+            screen.blit(skip_text, (W - skip_text.get_width() - 20, 20))
+
+
+
+# Создаем менеджер катсцен
+cutscene_manager = CutsceneManager()
+
+# Определяем катсцены
+cutscenes = {
+    "intro": {
+        "background": home_background,
+        "dialogues": [
+            {
+                "character": "Внутренний голос",
+                "character_image": parents_image,
+                "text": "Мне родители только мешают! Я пытаюсь жить и радоваться жизни! "
+                        "А им лишь бы меня ругать и заставлять что-то делать!..."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "'Я всегда виноват', да?! 'Плохо себя веду и вообще я плохой'! Ничего они не понимают!"
+            },
+            {
+                "character": "",
+                "character_image": None,
+                "text": "*Я захожу к себе в спальню, пиная дверь, и ложусь на кровать с ужасным настроением*"
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Сон - единственное место, где никто, ничего и никогда не скажет плохого мне в лицо..."
+            }
+        ]
+    },
+    "level1_complete": {
+        "background": None,
+        "dialogues": [
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Помнишь, как мы ездили на озеро тем летом? Папа учил меня плавать... Мама готовила бутерброды..."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Тогда все было проще. Они ссорились и тогда, но всегда мирились к вечеру... Почему сейчас все по-другому?"
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Может быть... Может быть, они просто устали? Взрослые ведь тоже иногда ломаются..."
+            }
+        ]
+    },
+    "level2_complete": {
+        "background": None,
+        "dialogues": [
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Первые соревнования по плаванию... Мама шептала мне перед началом: 'Ты сможешь, я в тебя верю'..."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Мама плакала от гордости у бассейна. После объявления у меня 1-го места она обняла меня так крепко..."
+                        "Папа тоже..."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Они всегда верили в меня... Даже когда я сам в себя не верил. А я... я перестал верить в них."
+            }
+        ]
+    },
+    "level3_complete": {
+        "background": None,
+        "dialogues": [
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Тот день, когда папа потерял работу... Я видел, как он плакал в гараже. Думал, я не заметил..."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Мама взяла вторую работу. Они перестали разговаривать за ужином... А я злился на них за это."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Но сейчас я понимаю... Они не злые. Они просто сломленные. И им тоже больно."
+            }
+        ]
+    },
+    "boss_defeated": {
+        "background": None,
+        "dialogues": [
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Страх... Гнев... Одиночество... Эти монстры в моих снах - это же мои же эмоции."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Я так долго носил в себе эту злость на них... Думал, они специально разрушают нашу семью."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Но они просто люди... Со своими слабостями, страхами, неудачами. Как и я."
+            }
+        ]
+    },
+    "level4_complete": {
+        "background": None,
+        "dialogues": [
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Помнишь наши субботние завтраки? Мама готовила оладьи, папа рассказывал смешные истории..."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Иногда он задерживался на работе, и мама грустила... Но когда он возвращался, она снова улыбалась."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Они всегда находили способ быть вместе... Даже когда было трудно. Может, и сейчас найдут?"
+            }
+        ]
+    },
+    "level5_complete": {
+        "background": None,
+        "dialogues": [
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Тот вечер, когда я заболел... Мама не отходила от моей кровати всю ночь."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "В самые трудные моменты они всегда были рядом... А сейчас их трудный момент. И где же я?"
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Я прячусь в своих снах... В своих обидах... А им, наверное, так же страшно и одиноко, как мне."
+            }
+        ]
+    },
+    "game_complete": {
+        "background": home_background,
+        "dialogues": [
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Эти сны... Они не просто воспоминания. Они напоминали мне, кто мы на самом деле. Семья."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Не идеальная, не всегда счастливая... Но настоящая. Со своими ранами и шрамами, но и с любовью тоже."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Папа не злой... Он напуган. Мама не холодная... Она устала. А я... я был слеп."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Завтра утром я подойду к ним. Просто обниму. Скажу, что люблю их. Несмотря ни на что."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Потому что семья - это не когда все идеально. Семья - это когда прощают, даже когда больно."
+            }
+        ]
+    },
+    "final_awakening": {
+        "background": home_background,
+        "dialogues": [
+            {
+                "character": "Мама",
+                "character_image": parents_image,
+                "text": "Сынок?..."
+            },
+            {
+                "character": "Папа",
+                "character_image": parents_image,
+                "text": "Сын..., прости..., я накричал на тебя..."
+            },
+            {
+                "character": "Главный герой",
+                "character_image": None,
+                "text": "Я вас понимаю... И я вас люблю. Мы справимся. Вместе."
+            },
+            {
+                "character": "Мама",
+                "character_image": parents_image,
+                "text": "*обнимает* Мы тоже тебя любим, солнышко. Больше всего на свете."
+            },
+            {
+                "character": "Папа",
+                "character_image": parents_image,
+                "text": "Да... Вместе. Как раньше. Мы найдем выход. Главное, что у нас есть ты."
+            }
+        ]
+    }
+}
 
 
 # Класс для управления уровнями
@@ -195,7 +566,7 @@ class LevelManager:
                 "name": "Уровень 1",
                 "width": 5000,
                 "music": level_1_part_1_music,
-                "bg_color": (92, 148, 252),
+                "bg_gradient": [(92, 148, 252), (45, 85, 205), (30, 144, 255)],
                 "platforms": [
                     pygame.Rect(200, 650, 150, 20),
                     pygame.Rect(400, 570, 150, 20),
@@ -243,7 +614,7 @@ class LevelManager:
                 "name": "Уровень 2",
                 "width": 5000,
                 "music": level_2_part_1_music,
-                "bg_color": (148, 100, 92),
+                "bg_gradient": [(186, 85, 211), (153, 50, 204), (106, 13, 173)],
                 "platforms": [
                     pygame.Rect(150, 630, 120, 20),
                     pygame.Rect(350, 500, 140, 20),
@@ -285,7 +656,7 @@ class LevelManager:
                 "name": "Уровень 3",
                 "width": 5000,
                 "music": level_3_part_1_music,
-                "bg_color": (148, 150, 92),
+                "bg_gradient": [(148, 150, 92), (107, 142, 35), (154, 205, 50)],
                 "platforms": [
                     pygame.Rect(100, 500, 100, 20),
                     pygame.Rect(300, 400, 120, 20),
@@ -316,7 +687,7 @@ class LevelManager:
                 "name": "Уровень 4",
                 "width": 5000,
                 "music": level_4_part_1_music,
-                "bg_color": (100, 100, 150),
+                "bg_gradient": [(150, 150, 150), (42, 81, 189), (13, 90, 205)],
                 "platforms": [
                     pygame.Rect(120, 520, 100, 20),
                     pygame.Rect(320, 420, 110, 20),
@@ -335,9 +706,7 @@ class LevelManager:
                     pygame.Rect(3450, 290, 130, 20),
                     pygame.Rect(3700, 190, 120, 20),
                     pygame.Rect(3950, 340, 150, 20),
-                    pygame.Rect(4200, 440, 140, 20),
-                    pygame.Rect(4450, 330, 130, 20),
-                    pygame.Rect(4700, 230, 120, 20)
+                    pygame.Rect(4200, 440, 140, 20)
                 ],
                 "has_boss": False,
                 "enemy_count": 10,
@@ -349,7 +718,7 @@ class LevelManager:
                         "reward": "easter_egg",
                         "value": "sonic_reference",
                         "found": False,
-                        "message": "Пасхалка: Отсылка к Сонику!",
+                        "message": "Пасхалка: Отсылка к Starset!",
                         "image": secret_star_image
                     }
                 ]
@@ -357,8 +726,8 @@ class LevelManager:
             5: {
                 "name": "Уровень 5",
                 "width": 5000,
-                "music": level_4_part_1_music,
-                "bg_color": (100, 100, 150),
+                "music": level_5_part_1_music,
+                "bg_gradient": [(100, 100, 150), (135, 206, 235), (176, 224, 230)],
                 "platforms": [
                     pygame.Rect(150, 550, 120, 20),
                     pygame.Rect(350, 450, 130, 20),
@@ -409,8 +778,8 @@ class LevelManager:
             6: {
                 "name": "Уровень 6",
                 "width": 5000,
-                "music": level_3_part_1_music,
-                "bg_color": (100, 100, 150),
+                "music": level_6_part_1_music,
+                "bg_gradient": [(100, 100, 150), (178, 34, 34), (220, 20, 60)],
                 "platforms": [
                     pygame.Rect(100, 500, 110, 20),
                     pygame.Rect(300, 380, 120, 20),
@@ -441,6 +810,7 @@ class LevelManager:
         self.scroll_pos = 0
         self.level_surface = None
         self.portal_rect = None
+        self.gradient_cache = {}
 
     def load_level(self, level_num):
         if level_num in self.levels:
@@ -451,11 +821,22 @@ class LevelManager:
             # Загружаем прогресс секретных комнат для текущей сложности
             self.load_secret_progress(level_num)
 
-            # Создаем поверхность для уровня
+            # Создаем поверхность для уровня с градиентом
             self.level_surface = pygame.Surface((level_data["width"], H))
-            self.level_surface.fill(level_data["bg_color"])
 
-            # Рисуем землю
+            # Создаем градиентный фон
+            if "bg_gradient" in level_data:
+                gradient_key = f"{level_num}_{level_data['width']}_{H}"
+                if gradient_key not in self.gradient_cache:
+                    self.gradient_cache[gradient_key] = create_gradient_surface(
+                        level_data["width"], H, level_data["bg_gradient"]
+                    )
+                self.level_surface.blit(self.gradient_cache[gradient_key], (0, 0))
+            else:
+                # Фолбэк на старый цвет, если градиента нет
+                self.level_surface.fill(level_data.get("bg_color", (92, 148, 252)))
+
+            # Рисуем землю (остальной код без изменений)
             if level_num == 1:
                 for x in range(0, 1800, ground_image.get_width()):
                     self.level_surface.blit(ground_image, (x, H - GROUND_H))
@@ -470,10 +851,10 @@ class LevelManager:
                 for x in range(0, level_data["width"], ground_image.get_width()):
                     self.level_surface.blit(ground_image, (x, H - GROUND_H))
 
-            # Создаем портал
+            # Создаем портал (без изменений)
             self.portal_rect = portal_image.get_rect(center=(level_data["width"] - 200, H - GROUND_H - 45))
 
-            # Загружаем музыку уровня
+            # Загружаем музыку уровня (без изменений)
             if music_on:
                 try:
                     pygame.mixer.music.load(level_data["music"])
@@ -1056,6 +1437,66 @@ skins = [
         "unlock": 'Нужно 2 очка уровней',
         "damaged": "Sprites and objects/Skins/Freddy the bear/Freddy_damaged.png",
         "img": pygame.Surface((90, 50)),
+    },
+    {
+        "name": "Бронзовый герой",
+        "unlocked": False,
+        "image": "Sprites and objects/Skins/Bronze/Bronze_hero.png",
+        "walk_right": [
+            "Sprites and objects/Skins/Bronze/Bronze_right1.png",
+            "Sprites and objects/Skins/Bronze/Bronze_right2.png",
+            "Sprites and objects/Skins/Bronze/Bronze_right3.png",
+            "Sprites and objects/Skins/Bronze/Bronze_right4.png",
+        ],
+        "walk_left": [
+            "Sprites and objects/Skins/Bronze/Bronze_left1.png",
+            "Sprites and objects/Skins/Bronze/Bronze_left2.png",
+            "Sprites and objects/Skins/Bronze/Bronze_left3.png",
+            "Sprites and objects/Skins/Bronze/Bronze_left4.png",
+        ],
+        "damaged": "Sprites and objects/Skins/Bronze/Bronze_damaged.png",
+        "unlock": "Пройти все уровни на ЛЁГКОЙ сложности",
+        "img": pygame.Surface((40, 50)),
+    },
+    {
+        "name": "Чемпион",
+        "unlocked": False,
+        "image": "Sprites and objects/Skins/Silver/Silver_champion.png",
+        "walk_right": [
+            "Sprites and objects/Skins/Silver/Silver_right1.png",
+            "Sprites and objects/Skins/Silver/Silver_right2.png",
+            "Sprites and objects/Skins/Silver/Silver_right3.png",
+            "Sprites and objects/Skins/Silver/Silver_right4.png",
+        ],
+        "walk_left": [
+            "Sprites and objects/Skins/Silver/Silver_left1.png",
+            "Sprites and objects/Skins/Silver/Silver_left2.png",
+            "Sprites and objects/Skins/Silver/Silver_left3.png",
+            "Sprites and objects/Skins/Silver/Silver_left4.png",
+        ],
+        "damaged": "Sprites and objects/Skins/Silver/Silver_damaged.png",
+        "unlock": "Пройти все уровни на СРЕДНЕЙ сложности",
+        "img": pygame.Surface((40, 50)),
+    },
+    {
+        "name": "Золотой легенда",
+        "unlocked": False,
+        "image": "Sprites and objects/Skins/Gold/Gold_legend.png",
+        "walk_right": [
+            "Sprites and objects/Skins/Gold/Gold_right1.png",
+            "Sprites and objects/Skins/Gold/Gold_right2.png",
+            "Sprites and objects/Skins/Gold/Gold_right3.png",
+            "Sprites and objects/Skins/Gold/Gold_right4.png",
+        ],
+        "walk_left": [
+            "Sprites and objects/Skins/Gold/Gold_left1.png",
+            "Sprites and objects/Skins/Gold/Gold_left2.png",
+            "Sprites and objects/Skins/Gold/Gold_left3.png",
+            "Sprites and objects/Skins/Gold/Gold_left4.png",
+        ],
+        "damaged": "Sprites and objects/Skins/Gold/Gold_damaged.png",
+        "unlock": "Пройти все уровни на СЛОЖНОЙ сложности",
+        "img": pygame.Surface((40, 50)),
     }
 ]
 
@@ -1065,7 +1506,18 @@ for skin in skins:
         img = pygame.image.load(skin["image"])
         skin["img"] = pygame.transform.scale(img, (40, 50))
     except:
-        pass
+        # Создаем placeholder цвет в зависимости от типа скина
+        if "Бронзовый" in skin["name"]:
+            skin["img"] = pygame.Surface((40, 50))
+            skin["img"].fill((205, 127, 50))  # Бронзовый цвет
+        elif "Серебряный" in skin["name"]:
+            skin["img"] = pygame.Surface((40, 50))
+            skin["img"].fill((192, 192, 192))  # Серебряный цвет
+        elif "Золотой" in skin["name"]:
+            skin["img"] = pygame.Surface((40, 50))
+            skin["img"].fill((255, 215, 0))  # Золотой цвет
+        else:
+            skin["img"] = pygame.Surface((40, 50))
 
 # Анимации
 running_sprites_right = []
@@ -1115,6 +1567,32 @@ for i in range(1, 4):
     except:
         running_sprites_enemy_right_2.append(pygame.Surface((90, 90)))
         running_sprites_enemy_left_2.append(pygame.Surface((90, 90)))
+
+# Анимации для дамагера
+running_sprites_damager_right = []
+running_sprites_damager_left = []
+for i in range(1, 4):
+    try:
+        img_right = pygame.image.load(f"Sprites and objects/Enemies/Damager/Doomba_right_{i}.png")
+        img_left = pygame.image.load(f"Sprites and objects/Enemies/Damager/Doomba_left_{i}.png")
+        running_sprites_damager_right.append(pygame.transform.scale(img_right, (90, 90)))
+        running_sprites_damager_left.append(pygame.transform.scale(img_left, (90, 90)))
+    except:
+        running_sprites_damager_right.append(pygame.Surface((90, 90)))
+        running_sprites_damager_left.append(pygame.Surface((90, 90)))
+
+# Анимации для прыгуна
+running_sprites_jumper_right = []
+running_sprites_jumper_left = []
+for i in range(1, 4):
+    try:
+        img_right = pygame.image.load(f"Sprites and objects/Enemies/Jumper/Jumper_right_{i}.png")
+        img_left = pygame.image.load(f"Sprites and objects/Enemies/Jumper/Jumper_left_{i}.png")
+        running_sprites_jumper_right.append(pygame.transform.scale(img_right, (90, 90)))
+        running_sprites_jumper_left.append(pygame.transform.scale(img_left, (90, 90)))
+    except:
+        running_sprites_jumper_right.append(pygame.Surface((90, 90)))
+        running_sprites_jumper_left.append(pygame.Surface((90, 90)))
 
 # Переменные текущего скина
 current_skin_index = 0
@@ -1322,20 +1800,23 @@ class Player:
 class Monster:
     def __init__(self):
         global Level
+        self.running_sprites_enemy_right = running_sprites_enemy_right
+        self.running_sprites_enemy_left = running_sprites_enemy_left
         # По умолчанию обычный враг
         self.enemy_type = "common"
 
         # БАЗОВАЯ СКОРОСТЬ для разных типов врагов
         if self.enemy_type == "speed":
-            self.speed = 10  # Высокая скорость для скоростных врагов
+            self.speed = 8
+        elif self.enemy_type == "damager":
+            self.speed = 4  # Медленнее, но сильнее бьет
+        elif self.enemy_type == "jumper":
+            self.speed = 6
         else:
             self.speed = 5  # Нормальная скорость для обычных врагов
-        if self.enemy_type == "speed":
-            self.running_sprites_enemy_right = running_sprites_enemy_right_2
-            self.running_sprites_enemy_left = running_sprites_enemy_left_2
-        else:
-            self.running_sprites_enemy_right = running_sprites_enemy_right
-            self.running_sprites_enemy_left = running_sprites_enemy_left
+
+        # Установка спрайтов в зависимости от типа
+        self.set_sprites_by_type()
 
         self.image = self.running_sprites_enemy_right[0]
         self.current_frame_index = 0
@@ -1352,7 +1833,31 @@ class Monster:
         self.damage_given = False
         self.HP = 100
         self.original_size = self.rect.size
+
+        # Для прыгунов
+        self.last_jump_time = 0
+        self.jump_cooldown = 5000  # 5 секунд между прыжками
+        self.can_jump = True
+
+        # Для дамагеров
+        self.damage_amount = 2 if self.enemy_type == "damager" else 1
+
         self.spawn()
+
+    def set_sprites_by_type(self):
+        """Устанавливает спрайты в зависимости от типа врага"""
+        if self.enemy_type == "speed":
+            self.running_sprites_enemy_right = running_sprites_enemy_right_2
+            self.running_sprites_enemy_left = running_sprites_enemy_left_2
+        elif self.enemy_type == "damager":
+            self.running_sprites_enemy_right = running_sprites_damager_right
+            self.running_sprites_enemy_left = running_sprites_damager_left
+        elif self.enemy_type == "jumper":
+            self.running_sprites_enemy_right = running_sprites_jumper_right
+            self.running_sprites_enemy_left = running_sprites_jumper_left
+        else:  # common
+            self.running_sprites_enemy_right = running_sprites_enemy_right
+            self.running_sprites_enemy_left = running_sprites_enemy_left
 
     def spawn(self):
         global Level
@@ -1361,12 +1866,21 @@ class Monster:
         # ПЕРЕПРОВЕРЯЕМ тип врага и устанавливаем соответствующие свойства
         if self.enemy_type == "speed":
             self.speed = 8
-            self.running_sprites_enemy_right = running_sprites_enemy_right_2
-            self.running_sprites_enemy_left = running_sprites_enemy_left_2
-        else:
+            self.damage_amount = 1
+        elif self.enemy_type == "damager":
+            self.speed = 4
+            self.damage_amount = 2  # Наносит 2 урона
+        elif self.enemy_type == "jumper":
+            self.speed = 6
+            self.damage_amount = 1
+            self.can_jump = True
+            self.last_jump_time = pygame.time.get_ticks()
+        else:  # common
             self.speed = 5
-            self.running_sprites_enemy_right = running_sprites_enemy_right
-            self.running_sprites_enemy_left = running_sprites_enemy_left
+            self.damage_amount = 1
+
+        # Устанавливаем спрайты
+        self.set_sprites_by_type()
 
         if direction == 0:
             self.x_speed = self.speed
@@ -1376,6 +1890,14 @@ class Monster:
             self.x_speed = -self.speed
             self.rect.bottomleft = (W, H - GROUND_H)
             self.image = self.running_sprites_enemy_right[0]
+
+    def jump(self):
+        """Прыжок для врагов-прыгунов"""
+        if self.enemy_type == "jumper" and self.is_grounded and self.can_jump:
+            self.y_speed = self.jump_speed
+            self.is_grounded = False
+            self.can_jump = False
+            self.last_jump_time = pygame.time.get_ticks()
 
     def kill(self):
         global Level
@@ -1388,12 +1910,24 @@ class Monster:
             if self.enemy_type == "speed":
                 dead_img = pygame.image.load("Sprites and objects/Enemies/Speed/Koopa_dead.png")
                 self.image = pygame.transform.scale(dead_img, (90, 28))
+            elif self.enemy_type == "damager":
+                dead_img = pygame.image.load("Sprites and objects/Enemies/Damager/Doomba_dead.png")
+                self.image = pygame.transform.scale(dead_img, (90, 28))
+            elif self.enemy_type == "jumper":
+                dead_img = pygame.image.load("Sprites and objects/Enemies/Jumper/Jumper_dead.png")
+                self.image = pygame.transform.scale(dead_img, (90, 28))
             else:  # common enemy
                 dead_img = pygame.image.load("Sprites and objects/Enemies/Common/Goomba_dead.png")
                 self.image = pygame.transform.scale(dead_img, (90, 28))
         except:
             self.image = pygame.Surface((90, 28))
-            self.image.fill((100, 100, 100))  # Серый цвет для отладки
+            # Разные цвета для отладки
+            if self.enemy_type == "damager":
+                self.image.fill((200, 0, 0))  # Темно-красный
+            elif self.enemy_type == "jumper":
+                self.image.fill((0, 0, 200))  # Темно-синий
+            else:
+                self.image.fill((100, 100, 100))  # Серый цвет для отладки
 
         # ВОССТАНАВЛИВАЕМ ПОЗИЦИЮ (сохраняем нижнюю часть на земле)
         self.rect = self.image.get_rect()
@@ -1410,6 +1944,10 @@ class Monster:
         # ОБНОВЛЯЕМ скорость в зависимости от типа при каждом обновлении
         if self.enemy_type == "speed":
             target_speed = 8
+        elif self.enemy_type == "damager":
+            target_speed = 4
+        elif self.enemy_type == "jumper":
+            target_speed = 6
         else:
             target_speed = 5
 
@@ -1419,6 +1957,20 @@ class Monster:
                 self.x_speed = target_speed
             elif self.x_speed < 0:
                 self.x_speed = -target_speed
+
+        # Для прыгунов - проверяем возможность прыжка
+        if (self.enemy_type == "jumper" and
+                not self.is_dead and
+                not self.can_jump and
+                now - self.last_jump_time > self.jump_cooldown):
+            self.can_jump = True
+
+        # Случайный прыжок для прыгунов
+        if (self.enemy_type == "jumper" and
+                self.can_jump and
+                self.is_grounded and
+                random.random() < 0.02):  # 2% шанс прыгнуть каждый кадр
+            self.jump()
 
         if not self.is_dead and now - self.last_frame_update > self.frame_delay:
             self.current_frame_index = (self.current_frame_index + 1) % len(self.running_sprites_enemy_right)
@@ -1459,7 +2011,7 @@ class Monster:
 
 class Boss:
     def __init__(self):
-        global Level
+        current_level = level_manager.current_level
         self.running_sprites_enemy_right = running_sprites_right_boss
         self.running_sprites_enemy_left = running_sprites_left_boss
         self.current_frame_index = 0
@@ -1482,34 +2034,26 @@ class Boss:
         self.phase_changed = False
         if current_difficulty == 0:  # Легко
             self.attack_damage = 1
-            if Level == 3:
-                self.HP = 20
-                self.max_HP = 20
-            elif Level == 6:
-                self.HP = 50
-                self.max_HP = 50
-            else:
-                self.max_HP = 20
         elif current_difficulty == 1:  # Средне
             self.attack_damage = 2
-            if Level == 3:
-                self.HP = 25
-                self.max_HP = 25
-            elif Level == 6:
-                self.HP = 60
-                self.max_HP = 60
-            else:
-                self.max_HP = 20
         elif current_difficulty == 2:  # Сложно
             self.attack_damage = 3
-            if Level == 3:
-                self.HP = 35
-                self.max_HP = 35
-            elif Level == 6:
-                self.HP = 80
-                self.max_HP = 80
-            else:
-                self.max_HP = 20
+
+        # ИСПРАВЛЕННЫЙ КОД: используем current_level вместо глобальной Level
+        boss_hp_values = {
+            3: {0: 20, 1: 22, 2: 24},  # Уровень 3
+            6: {0: 50, 1: 56, 2: 65}  # Уровень 6 - БОЛЬШЕ HP
+        }
+
+        # Значения по умолчанию для других случаев
+        default_hp = {0: 20, 1: 23, 2: 25}
+
+        if current_level in boss_hp_values:
+            self.HP = boss_hp_values[current_level][current_difficulty]
+            self.max_HP = boss_hp_values[current_level][current_difficulty]
+        else:
+            self.HP = default_hp[current_difficulty]
+            self.max_HP = default_hp[current_difficulty]
 
         # Таймеры и задержки
         self.spawn_time = pygame.time.get_ticks()
@@ -1613,11 +2157,11 @@ class Boss:
 
     def choose_behavior(self):
         if self.phase == 0:
-            behaviors = ["patrol", "patrol", "jump", "charge"]
+            behaviors = ["patrol", "patrol", "charge"]
         elif self.phase == 1:
-            behaviors = ["patrol", "charge", "charge", "jump", "special"]
+            behaviors = ["patrol", "charge", "charge"]
         else:
-            behaviors = ["charge", "jump", "special", "charge", "jump"]
+            behaviors = ["patrol", "charge", "charge"]
 
         self.current_behavior = random.choice(behaviors)
         self.behavior_change_time = pygame.time.get_ticks()
@@ -1636,9 +2180,6 @@ class Boss:
         elif self.current_behavior == "special":
             self.x_speed = 0
 
-    def execute_special_attack(self):
-        if self.phase >= 1 and self.is_grounded:
-            self.y_speed = self.jump_speed * (1.2 + 0.3 * self.phase)
 
     def check_boundaries(self):
         if self.rect.left <= self.left_boundary:
@@ -1732,10 +2273,6 @@ class Boss:
         if self.has_started_moving and now - self.behavior_change_time > self.behavior_duration:
             self.choose_behavior()
 
-        if self.current_behavior == "special" and now - self.behavior_change_time > 500:
-            self.execute_special_attack()
-            self.current_behavior = "patrol"
-
         # Анимация
         if now - self.last_frame_update > self.frame_delay:
             self.current_frame_index = (self.current_frame_index + 1) % len(self.running_sprites_enemy_right)
@@ -1806,6 +2343,37 @@ class Boss:
 player = Player()
 
 
+def create_gradient_surface(width, height, colors):
+    """Создает поверхность с вертикальным градиентом"""
+    gradient_surface = pygame.Surface((width, height))
+
+    if len(colors) == 1:
+        gradient_surface.fill(colors[0])
+        return gradient_surface
+
+    # Создаем вертикальный градиент
+    color_count = len(colors)
+    segment_height = height // (color_count - 1)
+
+    for i in range(color_count - 1):
+        start_color = colors[i]
+        end_color = colors[i + 1]
+        start_y = i * segment_height
+        end_y = (i + 1) * segment_height
+
+        for y in range(start_y, end_y):
+            # Интерполяция между цветами
+            ratio = (y - start_y) / (end_y - start_y)
+            r = start_color[0] + (end_color[0] - start_color[0]) * ratio
+            g = start_color[1] + (end_color[1] - start_color[1]) * ratio
+            b = start_color[2] + (end_color[2] - start_color[2]) * ratio
+
+            pygame.draw.line(gradient_surface, (int(r), int(g), int(b)),
+                             (0, y), (width, y))
+
+    return gradient_surface
+
+
 # Функции для работы с базой данных
 def save_settings_sql():
     global music_on, sound_on, player_points_easy, player_points_medium, player_points_hard, current_difficulty, pending_mode
@@ -1855,6 +2423,7 @@ def load_game_sql():
         player.HP = row[2] if row[2] is not None else player.HP
         player.shield = row[3] if row[3] is not None else player.shield
         return row[4] if row[4] else 1
+    return None  # Добавить возврат None если сохранения нет
 
 
 def save_skin():
@@ -2137,18 +2706,66 @@ def change_difficulty(new_difficulty):
     save_skin()
     current_difficulty = new_difficulty
     difficulty_level = new_difficulty
+
+    # Очищаем текущий прогресс уровня при смене сложности
+    cursor = saving.cursor()
+    table_name = ['game_progress_easy', 'game_progress_medium', 'game_progress_hard'][current_difficulty]
+    cursor.execute(f'DELETE FROM {table_name}')
+    saving.commit()
+
     # Загружаем все данные для новой сложности
     save_settings_sql()
     load_upgrades()
-    load_skin()  # Загружаем скин для новой сложности
+    load_skin()
     load_unlocked_skins()
-    apply_skin(current_skin_index)  # Применяем загруженный скин
-    # Загружаем секретные предметы для новой сложности
+    apply_skin(current_skin_index)
     load_secret_items()
     load_secret_points()
+
+    # Сбрасываем позицию игрока
+    level_manager.scroll_pos = 0
+    player.respawn()
+
     # Показываем сообщение о смене сложности
     difficulty_names = ["Легко", "Средне", "Сложно"]
     show_message(f"Сложность изменена на: {difficulty_names[current_difficulty]}")
+
+
+# Функции для проверки завершения всех уровней и разблокировки скинов
+def check_all_levels_completed(difficulty):
+    """Проверяет, пройдены ли все уровни на указанной сложности"""
+    cursor = saving.cursor()
+    table_name = ['levels_easy', 'levels_medium', 'levels_hard'][difficulty]
+
+    # Проверяем все 6 уровней
+    for level_num in range(1, 7):
+        cursor.execute(f'SELECT cleared FROM {table_name} WHERE level_number = ?', (level_num,))
+        row = cursor.fetchone()
+        if not row or not bool(row[0]):
+            return False
+    return True
+
+
+def unlock_completion_skins():
+    """Разблокирует скины за прохождение всех уровней на разных сложностях"""
+    # Проверяем каждую сложность и разблокируем соответствующие скины
+    if check_all_levels_completed(0):  # Легкая сложность
+        for skin in skins:
+            if skin["name"] == "Бронзовый герой":
+                skin["unlocked"] = True
+
+    if check_all_levels_completed(1):  # Средняя сложность
+        for skin in skins:
+            if skin["name"] == "Чемпион":
+                skin["unlocked"] = True
+
+    if check_all_levels_completed(2):  # Сложная сложность
+        for skin in skins:
+            if skin["name"] == "Золотой легенда":
+                skin["unlocked"] = True
+
+    # Сохраняем статус разблокировки
+    save_unlocked_skins()
 
 
 # Игровые меню и экраны
@@ -2262,6 +2879,41 @@ def management_menu():
         clock.tick(60)
 
 
+def play_cutscene(cutscene_name):
+    """Проигрывает указанную катсцену"""
+    global playing_level
+
+    if cutscene_name not in cutscenes:
+        return
+
+    cutscene_data = cutscenes[cutscene_name]
+    cutscene_manager.start_cutscene(cutscene_data)
+
+    playing_cutscene = True
+    while playing_cutscene:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    # Пропуск всей катсцены
+                    playing_cutscene = False
+                elif event.key == pygame.K_SPACE:
+                    # Продолжение к следующему диалогу или завершение катсцены
+                    if not cutscene_manager.finish_current():
+                        playing_cutscene = False
+
+        # Обновление катсцены
+        if not cutscene_manager.update():
+            playing_cutscene = False
+
+        # Отрисовка
+        cutscene_manager.draw(screen)
+        pygame.display.flip()
+        clock.tick(60)
+
+
 def main_menu():
     global menu, from_menu, from_level, message, playing_level
     load_settings_sql()
@@ -2314,6 +2966,8 @@ def main_menu():
                         save_secret_items()
                         save_secret_points()
                         save_skin()  # Сохраняем скин перед переходом
+                        # Воспроизводим вступительную катсцену перед переходом к выбору уровня
+                        play_cutscene("intro")
                         level_menu()
                     elif selected_option == 1:
                         skin_menu()
@@ -2386,6 +3040,7 @@ def skin_menu():
     load_upgrades()
     load_unlocked_skins()
     load_skin()  # Загружаем скин для ТЕКУЩЕЙ сложности
+    unlock_completion_skins()  # Проверяем и разблокируем скины за полное прохождение
 
     # Сбрасываем confirmed_skin_index на актуальный для текущей сложности
     confirmed_skin_index = current_skin_index
@@ -2473,6 +3128,18 @@ def skin_menu():
         draw_text(f"Сложность: {difficulty_names[current_difficulty]}", font_small, (200, 200, 200), screen, W // 2,
                   H // 6)
 
+        # ПОКАЗЫВАЕМ ПРОГРЕСС ПО УРОВНЯМ ДЛЯ ТЕКУЩЕЙ СЛОЖНОСТИ
+        cursor = saving.cursor()
+        table_name = ['levels_easy', 'levels_medium', 'levels_hard'][current_difficulty]
+        completed_levels = 0
+        for level_num in range(1, 7):
+            cursor.execute(f'SELECT cleared FROM {table_name} WHERE level_number = ?', (level_num,))
+            row = cursor.fetchone()
+            if row and bool(row[0]):
+                completed_levels += 1
+
+        draw_text(f"Прогресс: {completed_levels}/6 уровней", font_small, (200, 200, 200), screen, W // 2, H // 6 + 30)
+
         load_upgrades()
 
         # Обновляем статус разблокировки скинов
@@ -2483,8 +3150,8 @@ def skin_menu():
                 skin_selected["unlocked"] = player.double_jump_unlocked
 
         for idx, skin_0 in enumerate(skins):
-            y_pos = H // 4 + (idx % 4) * 60
-            x_pos = W // 2 - 250 if idx < 4 else W // 2 + 200
+            y_pos = H // 4 + (idx % 6) * 60
+            x_pos = W // 2 - 250 if idx < 6 else W // 2 + 200
 
             # Определяем цвет текста
             is_selected = idx == selected_skin_index
@@ -2874,7 +3541,7 @@ def secrets():
          "type": "points"},
         {"name": "Сияющая звезда (Уровень 2)", "id": "secret_star_1", "description": "Требует двойного прыжка",
          "type": "item"},
-        {"name": "Отсылка к Сонику (Уровень 4)", "id": "sonic_reference", "description": "Нужно уметь быстро бегать",
+        {"name": "Отсылка к Starset (Уровень 4)", "id": "sonic_reference", "description": "Требует навык 'бег'",
          "type": "item"},
         {"name": "Сокровищница (Уровень 5)", "id": "points_5_3200_150", "description": "Дает +10 очков",
          "type": "points"},
@@ -3165,11 +3832,21 @@ def run_level(level_num):
         return
     level_data = level_manager.levels[level_num]
     load_upgrades()
-    HP = player.HP
-    if level_num == Level:
-        load_game_sql()
+
+    # ИНИЦИАЛИЗИРУЕМ HP ПРАВИЛЬНО
+    HP = player.HP  # Сначала получаем текущее HP игрока
+
+    # Пытаемся загрузить сохранение
+    loaded_level = load_game_sql()
+    if loaded_level == level_num:
+        # Если есть сохранение для этого уровня, используем загруженное HP
+        HP = player.HP
     else:
+        # Иначе начинаем уровень с полным HP
         player.HP = player.max_HP
+        HP = player.max_HP
+        level_manager.scroll_pos = 0
+
     player.respawn()
     player.rect.midbottom = (W // 2, H - GROUND_H)
 
@@ -3275,9 +3952,8 @@ def run_level(level_num):
             run_enemy_wave(level_num, level_data["enemy_count"])
             running = False
 
-        # Отрисовка
-        screen.fill((0, 0, 0))
-        level_manager.draw(screen)
+        # Отрисовка - УДАЛЕНО: screen.fill((0, 0, 0))
+        level_manager.draw(screen)  # Теперь фон рисуется в level_manager.draw
         player.draw(screen)
 
         # Отрисовка постоянных табличек для уровня 1
@@ -3298,11 +3974,11 @@ def run_level(level_num):
 
                     # Разделяем текст на строки если есть \n
                     lines = sign["text"].split('\n')
-                    for i, line in enumerate(lines):
+                    for h, line in enumerate(lines):
                         text_surface = font_small.render(line, True, (0, 0, 0))
                         text_rect = text_surface.get_rect(center=(
                             sign_x + sign["width"] // 2,
-                            sign_y + sign["height"] // 2 - (len(lines) - 1) * 15 + i * 30
+                            sign_y + sign["height"] // 2 - (len(lines) - 1) * 15 + h * 30
                         ))
                         screen.blit(text_surface, text_rect)
 
@@ -3312,7 +3988,7 @@ def run_level(level_num):
 
         # UI
         draw_text(f"Уровень: {level_num}", font_small, (255, 255, 255), screen, 100, 20)
-        draw_text(f"HP: {HP}", font_small, (255, 255, 255), screen, W // 3, 20)
+        draw_text(f"HP: {HP}", font_small, (255, 255, 255), screen, W // 3, 20)  # Теперь HP определена
         draw_text(f"Щиты: {player.shield}", font_small, (255, 255, 255), screen, W // 3 * 2, 20)
 
         # Показываем сообщение о найденном секрете
@@ -3328,11 +4004,18 @@ def run_level(level_num):
         pygame.display.flip()
         clock.tick(FPS)
 
-    playing_level = False  # Выходим из уровня
+    playing_level = False
 
 
 def run_boss_preparation(level_num):
     global monsters, score, player, save_message_displayed, save_message_timer, playing_level
+    loaded_level = load_game_sql()
+    HP = player.HP
+    if loaded_level != level_num:
+        # Если загружен другой уровень или сложность изменилась
+        level_manager.scroll_pos = 0
+        score = 0
+        player.HP = player.max_HP
 
     playing_level = True  # Теперь в уровне подготовки к боссу
 
@@ -3340,6 +4023,9 @@ def run_boss_preparation(level_num):
         show_message(f"Ошибка загрузки уровня {level_num}")
         playing_level = False
         return
+
+    # УБЕДИТЕСЬ, что level_manager знает о текущем уровне
+    level_manager.current_level = level_num
     if level_num == Level:
         load_game_sql()
     player.respawn()
@@ -3350,19 +4036,20 @@ def run_boss_preparation(level_num):
     HP = player.HP
     Start_HP = HP
     Shield = player.shield
-    tutorial_signs = []
-
-    if level_num == 3:
-        tutorial_signs = [
-            {"text": "ДВОЙНОЙ ПРЫЖОК:\n Shift + движение", "pos": (500, 640), "width": 220, "height": 60}
-        ]
 
     # Определяем количество врагов в зависимости от сложности
-    enemy_counts = {
-        0: {"common": 5, "speed": 5},  # Легко
-        1: {"common": 7, "speed": 7},  # Средне
-        2: {"common": 10, "speed": 10}  # Сложно
-    }
+    if level_num == 3:  # Подготовка к первому боссу
+        enemy_counts = {
+            0: {"common": 5, "speed": 5},
+            1: {"common": 7, "speed": 7},
+            2: {"common": 10, "speed": 10}
+        }
+    else:  # Подготовка к финальному боссу (уровень 6)
+        enemy_counts = {
+            0: {"damager": 4, "jumper": 4},  # Дамагеры и прыгуны
+            1: {"damager": 5, "jumper": 5},
+            2: {"damager": 6, "jumper": 6}
+        }
 
     counts = enemy_counts.get(current_difficulty, enemy_counts[0])
     required_common = counts["common"]
@@ -3385,8 +4072,9 @@ def run_boss_preparation(level_num):
     invincible = False
     invincible_end_time = 0
 
-    # Создаем фон уровня
-    level_bg_color = level_manager.levels[level_num]["bg_color"]
+    # Получаем цвет фона уровня для создания градиента
+    level_data = level_manager.levels[level_num]
+    level_bg_gradient = level_data.get("bg_gradient", [(92, 148, 252)])
 
     running = True
     while running:
@@ -3430,25 +4118,38 @@ def run_boss_preparation(level_num):
         if len(monsters) < 5 and now - last_spawn_time > spawn_delay and not player.is_dead:
             monster = Monster()
 
-            # Определяем тип врага (обычный или скоростной)
-            if common_killed < required_common and speed_killed < required_speed:
-                # Спавним оба типа
+            # Определяем тип врага в зависимости от уровня
+            if level_num == 3:  # Подготовка к боссу 3 уровня
+                # Для 3 уровня оставляем обычных врагов
                 enemy_type = random.choice(["common", "speed"])
-            elif common_killed < required_common:
-                enemy_type = "common"
+            elif level_num == 6:  # Подготовка к боссу 6 уровня
+                # Для 6 уровня используем врагов с соответствующих уровней
+                if common_killed < required_common:
+                    enemy_type = "damager"  # Дамагеры с 4 уровня
+                else:
+                    enemy_type = "jumper"  # Прыгуны с 5 уровня
             else:
-                enemy_type = "speed"
+                enemy_type = "common"
 
-            # Устанавливаем тип врага ПЕРЕД спавном
+            # Устанавливаем тип врага
             monster.enemy_type = enemy_type
 
             # ПЕРЕОПРЕДЕЛЯЕМ скорость и спрайты в зависимости от типа
             if enemy_type == "speed":
-                monster.speed = 8  # Высокая скорость
+                monster.speed = 8
                 monster.running_sprites_enemy_right = running_sprites_enemy_right_2
                 monster.running_sprites_enemy_left = running_sprites_enemy_left_2
+            elif enemy_type == "damager":
+                monster.speed = 4
+                monster.damage_amount = 2
+                monster.running_sprites_enemy_right = running_sprites_damager_right
+                monster.running_sprites_enemy_left = running_sprites_damager_left
+            elif enemy_type == "jumper":
+                monster.speed = 6
+                monster.running_sprites_enemy_right = running_sprites_jumper_right
+                monster.running_sprites_enemy_left = running_sprites_jumper_left
             else:
-                monster.speed = 5  # Нормальная скорость
+                monster.speed = 5
                 monster.running_sprites_enemy_right = running_sprites_enemy_right
                 monster.running_sprites_enemy_left = running_sprites_enemy_left
 
@@ -3524,8 +4225,10 @@ def run_boss_preparation(level_num):
             save_skin()  # Сохраняем скин
             run_boss_fight(level_num)
 
-        # Отрисовка
-        screen.fill(level_bg_color)
+        # Отрисовка - создаем градиентный фон
+        gradient_bg = create_gradient_surface(W, H, level_bg_gradient)
+        screen.blit(gradient_bg, (0, 0))
+
         screen.blit(ground_image, (0, H - GROUND_H))
         screen.blit(ground_image, (500, H - GROUND_H))
 
@@ -3539,42 +4242,19 @@ def run_boss_preparation(level_num):
 
         player.draw(screen)
 
-        if level_num == 3:
-            for sign in tutorial_signs:
-                sign_x = sign["pos"][0] - level_manager.scroll_pos
-                sign_y = sign["pos"][1]
-
-                # Проверяем, видна ли табличка на экране
-                if -sign["width"] < sign_x < W:
-                    # Рисуем табличку
-                    sign_color = sign.get("color", (200, 200, 100))  # Желтый по умолчанию
-                    sign_rect = pygame.Rect(sign_x, sign_y, sign["width"], sign["height"])
-
-                    # Основной фон таблички
-                    pygame.draw.rect(screen, sign_color, sign_rect)
-                    pygame.draw.rect(screen, (0, 0, 0), sign_rect, 3)  # Рамка
-
-                    # Разделяем текст на строки если есть \n
-                    lines = sign["text"].split('\n')
-                    for i, line in enumerate(lines):
-                        text_surface = font_small.render(line, True, (0, 0, 0))
-                        text_rect = text_surface.get_rect(center=(
-                            sign_x + sign["width"] // 2,
-                            sign_y + sign["height"] // 2 - (len(lines) - 1) * 15 + i * 30
-                        ))
-                        screen.blit(text_surface, text_rect)
-
-                    # Ножка таблички
-                    pole_rect = pygame.Rect(sign_x + sign["width"] // 2 - 5, sign_y + sign["height"], 10, 40)
-                    pygame.draw.rect(screen, (139, 69, 19), pole_rect)
-
         # UI
         draw_text("ПОДГОТОВКА К БОССУ", font_large, (255, 255, 255), screen, W // 2, 30)
-        draw_text(f"Гумбы: {common_killed}/{required_common}", font_medium, (255, 255, 255), screen, W // 4, 70)
-        draw_text(f"Купы: {speed_killed}/{required_speed}", font_medium, (255, 255, 255), screen,
-                  3 * W // 4, 70)
-        draw_text(f"HP: {HP}", font_medium, (255, 255, 255), screen, 100, 30)
-        draw_text(f"Щиты: {Shield}", font_medium, (255, 255, 255), screen, W - 100, 30)
+
+        # Для 6 уровня показываем соответствующие типы врагов
+        if level_num == 6:
+            draw_text(f"Думбы: {common_killed}/{required_common}", font_medium, (255, 0, 0), screen, W // 4, 70)
+            draw_text(f"Прыгуны: {speed_killed}/{required_speed}", font_medium, (0, 0, 255), screen, 3 * W // 4, 70)
+        else:
+            draw_text(f"Гумбы: {common_killed}/{required_common}", font_medium, (150, 50, 255), screen, W // 4, 70)
+            draw_text(f"Купы: {speed_killed}/{required_speed}", font_medium, (0, 255, 150), screen, 3 * W // 4, 70)
+
+        draw_text(f"HP: {HP}", font_medium, (255, 0, 255), screen, 100, 30)
+        draw_text(f"Щиты: {Shield}", font_medium, (0, 0, 255), screen, W - 100, 30)
 
         # Показываем статус портала
         if portal_active:
@@ -3600,6 +4280,12 @@ def run_boss_preparation(level_num):
 
 def run_enemy_wave(level_num, enemy_count):
     global monsters, score, player, save_message_displayed, save_message_timer, playing_level
+    loaded_level = load_game_sql()
+    if loaded_level != level_num:
+        # Если загружен другой уровень или сложность изменилась
+        level_manager.scroll_pos = 0
+        score = 0
+        player.HP = player.max_HP
 
     playing_level = True  # Теперь в волне врагов
 
@@ -3615,6 +4301,10 @@ def run_enemy_wave(level_num, enemy_count):
     invincible = False
     invincible_end_time = 0
     level_manager.scroll_pos = 4000
+
+    # Получаем градиент фона для уровня
+    level_data = level_manager.levels[level_num]
+    level_bg_gradient = level_data.get("bg_gradient", [(92, 148, 252)])
 
     running = True
     while running:
@@ -3653,19 +4343,34 @@ def run_enemy_wave(level_num, enemy_count):
 
         # Спавн врагов (только если игрок жив)
         if len(monsters) < 5 and now - last_spawn_time > spawn_delay and score < enemy_count and not player.is_dead:
-            # УДАЛЕНО: monsters.append(Monster())
-            # ЗАМЕНА: создаем врага с правильными настройками
             monster = Monster()
 
-            # Для уровня 2 устанавливаем тип "speed" для всех врагов
+            # Устанавливаем тип врага в зависимости от уровня
             if level_num == 2:
                 monster.enemy_type = "speed"
-                monster.speed = 8
-                monster.running_sprites_enemy_right = running_sprites_enemy_right_2
-                monster.running_sprites_enemy_left = running_sprites_enemy_left_2
+            elif level_num == 4:
+                monster.enemy_type = "damager"  # Только дамагеры на 4 уровне
+            elif level_num == 5:
+                monster.enemy_type = "jumper"  # Только прыгуны на 5 уровне
             else:
                 # Для других уровней оставляем обычных врагов
                 monster.enemy_type = "common"
+
+            # Устанавливаем свойства в зависимости от типа
+            if monster.enemy_type == "speed":
+                monster.speed = 8
+                monster.running_sprites_enemy_right = running_sprites_enemy_right_2
+                monster.running_sprites_enemy_left = running_sprites_enemy_left_2
+            elif monster.enemy_type == "damager":
+                monster.speed = 4
+                monster.damage_amount = 2
+                monster.running_sprites_enemy_right = running_sprites_damager_right
+                monster.running_sprites_enemy_left = running_sprites_damager_left
+            elif monster.enemy_type == "jumper":
+                monster.speed = 6
+                monster.running_sprites_enemy_right = running_sprites_jumper_right
+                monster.running_sprites_enemy_left = running_sprites_jumper_left
+            else:
                 monster.speed = 5
                 monster.running_sprites_enemy_right = running_sprites_enemy_right
                 monster.running_sprites_enemy_left = running_sprites_enemy_left
@@ -3682,12 +4387,6 @@ def run_enemy_wave(level_num, enemy_count):
         for monster in list(monsters):
             monster.update()
 
-            # УДАЛЕНО: принудительная установка скорости
-            # if level_num == 2:
-            #     monster.speed = 10
-            # else:
-            #     monster.speed = 5
-
             # Проверка коллизий (только если игрок жив)
             if not player.is_dead and player.rect.colliderect(monster.rect) and not monster.is_dead:
                 if (player.rect.bottom < monster.rect.centery and
@@ -3700,6 +4399,8 @@ def run_enemy_wave(level_num, enemy_count):
                     score += 1
                 elif not monster.damage_given and not invincible:
                     # Игрок получает урон
+                    damage_taken = monster.damage_amount  # Используем damage_amount врага
+
                     if Shield >= 1:
                         Shield -= 1
                         player.shield -= 1
@@ -3707,11 +4408,16 @@ def run_enemy_wave(level_num, enemy_count):
                         invincible = True
                         invincible_end_time = now + 1000
                     else:
-                        HP -= 1
+                        HP -= damage_taken  # Используем переменную damage_taken
                         player.damaged()
                         monster.damage_given = True
                         invincible = True
                         invincible_end_time = now + 1000
+
+                        # Показываем сообщение о повышенном уроне
+                        if damage_taken > 1:
+                            show_message(f"Критический удар! -{damage_taken} HP")
+
                     if HP <= 0:
                         player.kill(player.damaged_sprite)
                         show_message("Вы погибли!")
@@ -3728,8 +4434,10 @@ def run_enemy_wave(level_num, enemy_count):
                 player.image = player.idle_sprite
                 player.speed = 5
 
-        # Отрисовка
-        screen.fill(level_manager.levels[level_num]["bg_color"])
+        # Отрисовка - создаем градиентный фон
+        gradient_bg = create_gradient_surface(W, H, level_bg_gradient)
+        screen.blit(gradient_bg, (0, 0))
+
         screen.blit(ground_image, (0, H - GROUND_H))
         screen.blit(ground_image, (500, H - GROUND_H))
 
@@ -3742,6 +4450,12 @@ def run_enemy_wave(level_num, enemy_count):
         draw_text(f"Счет: {score}/{enemy_count}", font_large, (255, 255, 255), screen, W // 2, 30)
         draw_text(f"HP: {HP}", font_medium, (255, 255, 255), screen, 100, 30)
         draw_text(f"Щиты: {Shield}", font_medium, (255, 255, 255), screen, W - 100, 30)
+
+        # Показываем информацию о врагах для уровней 4 и 5
+        if level_num == 4:
+            draw_text("Осторожно! Думбы наносят 2 единицы урона!", font_small, (255, 0, 0), screen, W // 2, 70)
+        elif level_num == 5:
+            draw_text("Осторожно! Прыгуны!", font_small, (0, 0, 255), screen, W // 2, 70)
 
         if save_message_displayed and pygame.time.get_ticks() - save_message_timer < 2000:
             draw_text_with_background("Игра сохранена", font_small, (0, 0, 0), (255, 255, 255), screen, W // 2, H // 2)
@@ -3773,8 +4487,11 @@ def run_boss_fight(level_num):
 
     playing_level = True  # Теперь в битве с боссом
 
+    # УБЕДИТЕСЬ, что level_manager знает о текущем уровне
+    level_manager.current_level = level_num  # ДОБАВЬТЕ ЭТУ СТРОЧКУ
+
     player.rect.midbottom = (W // 3, H - GROUND_H)
-    boss = [Boss()]
+    boss = [Boss()]  # Теперь Boss будет использовать правильный уровень
     player.HP = load_upgrades()
     HP = player.HP
     Shield = player.shield
@@ -3784,6 +4501,10 @@ def run_boss_fight(level_num):
     invincible_end_time_boss = 0
     boss_phase_transition = False  # Флаг перехода фазы босса
     boss_phase_transition_end = 0  # Время окончания перехода фазы
+
+    # Получаем градиент фона для уровня
+    level_data = level_manager.levels[level_num]
+    level_bg_gradient = level_data.get("bg_gradient", [(92, 148, 252)])
 
     running = True
     while running:
@@ -3825,9 +4546,10 @@ def run_boss_fight(level_num):
 
         # Если игрок мертв и вылетел, ждем возрождения
         if player.is_out:
-            # ПРОДОЛЖАЕМ ОБНОВЛЯТЬ ЭКРАН ДАЖЕ КОГДА ИГРОК МЕРТВ
-            # Отрисовка фона
-            screen.fill(level_manager.levels[level_num]["bg_color"])
+            # Отрисовка фона с градиентом
+            gradient_bg = create_gradient_surface(W, H, level_bg_gradient)
+            screen.blit(gradient_bg, (0, 0))
+
             screen.blit(ground_image, (0, H - GROUND_H))
             screen.blit(ground_image, (500, H - GROUND_H))
 
@@ -3843,7 +4565,7 @@ def run_boss_fight(level_num):
             draw_text("БОСС БИТВА", font_large, (255, 0, 0), screen, W // 2, 30)
             if boss and not boss[0].is_dead:
                 # Полоска HP босса
-                hp_percent = boss[0].HP / 50
+                hp_percent = boss[0].HP / boss[0].max_HP
                 bar_width = 400
                 pygame.draw.rect(screen, (255, 0, 0), (W // 2 - bar_width // 2, 70, bar_width, 20))
 
@@ -3856,7 +4578,6 @@ def run_boss_fight(level_num):
                     color = (255, 165, 0)  # Оранжевый
                 else:
                     color = (255, 0, 0)  # Красный
-                    # В Boss.draw_health_bar() или отдельном методе
 
                 pygame.draw.rect(screen, color, (W // 2 - bar_width // 2, 70, bar_width * hp_percent, 20))
                 pygame.draw.rect(screen, (255, 255, 255), (W // 2 - bar_width // 2, 70, bar_width, 20), 2)
@@ -3964,8 +4685,10 @@ def run_boss_fight(level_num):
                 # Можно добавить эффект для босса, если есть поврежденная текстура
                 pass
 
-        # Отрисовка для живого игрока
-        screen.fill(level_manager.levels[level_num]["bg_color"])
+        # Отрисовка для живого игрока - создаем градиентный фон
+        gradient_bg = create_gradient_surface(W, H, level_bg_gradient)
+        screen.blit(gradient_bg, (0, 0))
+
         screen.blit(ground_image, (0, H - GROUND_H))
         screen.blit(ground_image, (500, H - GROUND_H))
 
@@ -4006,7 +4729,7 @@ def run_boss_fight(level_num):
             if boss_phase_transition:
                 draw_text("НЕУЯЗВИМОСТЬ!", font_medium, (255, 255, 0), screen, W // 2, 110)
 
-        draw_text(f"HP игрока: {HP}", font_medium, (255, 255, 255), screen, 100, 30)
+        draw_text(f"HP игрока: {HP}", font_medium, (255, 255, 255), screen, 140, 30)
         draw_text(f"Щиты: {Shield}", font_medium, (255, 255, 255), screen, W - 100, 30)
         draw_text(f"Атака: {player.attack}", font_small, (255, 255, 255), screen, W // 2, H - 50)
 
@@ -4034,7 +4757,8 @@ def run_boss_fight(level_num):
                 player.update(level_num)
 
                 # Отрисовка
-                screen.fill(level_manager.levels[level_num]["bg_color"])
+                gradient_bg = create_gradient_surface(W, H, level_bg_gradient)
+                screen.blit(gradient_bg, (0, 0))
                 screen.blit(ground_image, (0, H - GROUND_H))
                 screen.blit(ground_image, (500, H - GROUND_H))
                 for boss_obj in boss:
@@ -4086,6 +4810,22 @@ def complete_level(level_num, is_boss=False):
     cursor.execute(f'UPDATE {table_name} SET cleared=1 WHERE level_number=?', (level_num,))
     saving.commit()
 
+    # ПРОВЕРЯЕМ И РАЗБЛОКИРУЕМ СКИНЫ ЗА ПОЛНОЕ ПРОХОЖДЕНИЕ
+    unlock_completion_skins()
+
+    # Проверяем, был ли разблокирован новый скин за полное прохождение
+    completion_skin_unlocked = False
+    completion_skin_name = ""
+
+    if check_all_levels_completed(current_difficulty):
+        if current_difficulty == 0:
+            completion_skin_name = "Бронзовый герой"
+        elif current_difficulty == 1:
+            completion_skin_name = "Серебряный чемпион"
+        elif current_difficulty == 2:
+            completion_skin_name = "Золотой легенда"
+        completion_skin_unlocked = True
+
     # Проверяем секреты уровня
     total_secrets = level_manager.get_level_secrets_count(level_num)
     found_secrets = level_manager.get_found_secrets_count(level_num)
@@ -4109,12 +4849,12 @@ def complete_level(level_num, is_boss=False):
             player.max_HP += 2
         if player.attack < 2:
             player.attack = 2
-        unlock_message = "Открыт навык: бег, скин 'Соник', +2HP, +1ATK"
+        unlock_message = "Открыт навык: бег, +2HP, +1ATK"
     elif level_num == 2:
         player.double_jump_unlocked = True
         if player.max_HP < 8:
             player.max_HP += 3
-        unlock_message = "Открыты навык: двойной прыжок, скин 'Марио', +3HP"
+        unlock_message = "Открыты навык: двойной прыжок, +3HP"
     elif level_num == 3 and is_boss:
         if player.max_HP < 10:
             player.max_HP += 2
@@ -4161,9 +4901,9 @@ def complete_level(level_num, is_boss=False):
 
     # Формируем понятное сообщение с правильным склонением
     if is_boss:
-        base_message = f"Босс побежден! +{format_points(reward)}"
+        base_message = f"Кошмар побежден! +{format_points(reward)}"
     else:
-        base_message = f"Уровень пройден! +{format_points(reward)}"
+        base_message = f"Воспоминание восстановлено! +{format_points(reward)}"
 
     if bonus_reward > 0:
         base_message += f" +{format_points(bonus_reward)} за секреты"
@@ -4171,12 +4911,38 @@ def complete_level(level_num, is_boss=False):
     if unlock_message:
         base_message += f" | {unlock_message}"
 
+    # Добавляем сообщение о разблокировке скина за полное прохождение
+    if completion_skin_unlocked:
+        base_message += f" | Разблокирован скин: {completion_skin_name}!"
+
     if total_secrets > 0:
         base_message += f" | Секреты: {found_secrets}/{total_secrets}"
 
     message = base_message
 
-    # Показываем экран завершения
+    # Воспроизводим соответствующую катсцену
+    if is_boss and level_num == 6:
+        # Финальная катсцена после победы над последним боссом
+        play_cutscene("game_complete")
+        # Дополнительная катсцена пробуждения
+        play_cutscene("final_awakening")
+    elif is_boss:
+        # Катсцена после победы над боссом
+        play_cutscene("boss_defeated")
+    else:
+        # Катсцены после прохождения обычных уровней
+        if level_num == 1:
+            play_cutscene("level1_complete")
+        elif level_num == 2:
+            play_cutscene("level2_complete")
+        elif level_num == 3:
+            play_cutscene("level3_complete")
+        elif level_num == 4:
+            play_cutscene("level4_complete")
+        elif level_num == 5:
+            play_cutscene("level5_complete")
+
+    # Показываем экран завершения с градиентным фоном
     end_time = pygame.time.get_ticks() + 4000
     while pygame.time.get_ticks() < end_time:
         for event in pygame.event.get():
@@ -4184,12 +4950,16 @@ def complete_level(level_num, is_boss=False):
                 pygame.quit()
                 sys.exit()
 
-        screen.fill(level_manager.levels[level_num]["bg_color"])
+        # Создаем градиентный фон для экрана завершения
+        level_data = level_manager.levels[level_num]
+        level_bg_gradient = level_data.get("bg_gradient", [(92, 148, 252)])
+        gradient_bg = create_gradient_surface(W, H, level_bg_gradient)
+        screen.blit(gradient_bg, (0, 0))
 
         if is_boss:
-            draw_text("БОСС ПОБЕЖДЕН!", font_large, (255, 215, 0), screen, W // 2, H // 3 - 50)
+            draw_text("КОШМАР ПОБЕЖДЕН!", font_large, (255, 215, 0), screen, W // 2, H // 3 - 50)
         else:
-            draw_text("УРОВЕНЬ ПРОЙДЕН!", font_large, (255, 255, 255), screen, W // 2, H // 3 - 50)
+            draw_text("ВОСПОМИНАНИЕ ВОССТАНОВЛЕНО!", font_large, (255, 255, 255), screen, W // 2, H // 3 - 50)
 
         # Разбиваем длинное сообщение на несколько строк
         lines = []
@@ -4215,12 +4985,8 @@ def complete_level(level_num, is_boss=False):
 
     # ТРЕТЬЕ СОХРАНЕНИЕ - ОЧИСТКА ПРОГРЕССА УРОВНЯ
     cursor = saving.cursor()
-    if current_difficulty == 0:
-        cursor.execute('DELETE FROM game_progress_easy')
-    elif current_difficulty == 1:
-        cursor.execute('DELETE FROM game_progress_medium')
-    elif current_difficulty == 2:
-        cursor.execute('DELETE FROM game_progress_hard')
+    table_name = ['game_progress_easy', 'game_progress_medium', 'game_progress_hard'][current_difficulty]
+    cursor.execute(f'DELETE FROM {table_name}')
     saving.commit()
 
     from_level = True
