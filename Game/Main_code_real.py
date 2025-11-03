@@ -1593,8 +1593,8 @@ running_sprites_right_boss_2 = []
 running_sprites_left_boss_2 = []
 for i in range(1, 4):
     try:
-        img_right = pygame.image.load(f"Sprites and objects/Enemies/Speed/Koopa_right_{i}.png")
-        img_left = pygame.image.load(f"Sprites and objects/Enemies/Speed/Koopa_left_{i}.png")
+        img_right = pygame.image.load(f"Sprites and objects/Enemies/Bowser/Bowser_right_{i}.png")
+        img_left = pygame.image.load(f"Sprites and objects/Enemies/Bowser/Bowser_left_{i}.png")
         running_sprites_right_boss_2.append(pygame.transform.scale(img_right, (140, 140)))
         running_sprites_left_boss_2.append(pygame.transform.scale(img_left, (140, 140)))
     except:
@@ -2073,7 +2073,7 @@ class Boss:
             self.running_sprites_enemy_right = running_sprites_right_boss
             self.running_sprites_enemy_left = running_sprites_left_boss
         elif current_level == 6:
-            boss_img = pygame.image.load("Sprites and objects/Enemies/Speed/Koopa_right_1.png")
+            boss_img = pygame.image.load("Sprites and objects/Enemies/Bowser/Bowser_right_1.png")
             self.image = pygame.transform.scale(boss_img, (140, 140))
             self.running_sprites_enemy_right = running_sprites_right_boss_2
             self.running_sprites_enemy_left = running_sprites_left_boss_2
@@ -2281,8 +2281,8 @@ class Boss:
                 dead_img = pygame.image.load("Sprites and objects/Enemies/Common/Goomba_dead.png")
                 self.image = pygame.transform.scale(dead_img, (140, 38))
             elif current_level == 6:
-                dead_img = pygame.image.load("Sprites and objects/Enemies/Speed/Koopa_dead.png")
-                self.image = pygame.transform.scale(dead_img, (140, 38))
+                dead_img = pygame.image.load("Sprites and objects/Enemies/Bowser/bowser_dead.png")
+                self.image = pygame.transform.scale(dead_img, (140, 140))
 
         except:
             self.image = pygame.Surface((140, 38))
@@ -3162,7 +3162,7 @@ def main_menu():
                 last_move_time_up = now
 
         screen.fill(background_image)
-        draw_text("Главное меню", font_large, (255, 255, 255), screen, W // 2, H // 4)
+        draw_text("The Lost Wonder", font_large, (255, 255, 255), screen, W // 2, H // 4)
 
         for j, opt in enumerate(options):
             if j == 4 and not secrets_unlocked:
