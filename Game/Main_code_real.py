@@ -79,13 +79,6 @@ except:
     me_image.fill((255, 0, 0))
 
 try:
-    boss_image = pygame.image.load("Sprites and objects/Enemies/Common/Goomba_right_1.png")
-    boss_image = pygame.transform.scale(boss_image, (140, 140))
-except:
-    boss_image = pygame.Surface((140, 140))
-    boss_image.fill((150, 75, 0))
-
-try:
     portal_image = pygame.image.load("Sprites and objects/Objects, background and other/p2.gif")
     portal_image = pygame.transform.scale(portal_image, (80, 90))
 except:
@@ -312,7 +305,6 @@ class CutsceneManager:
         if self.show_skip_prompt:
             skip_text = font_small.render("Нажмите ESC для пропуска катсцены", True, (150, 150, 150))
             screen.blit(skip_text, (W - skip_text.get_width() - 20, 20))
-
 
 
 # Создаем менеджер катсцен
@@ -657,28 +649,6 @@ class LevelManager:
                 "width": 5000,
                 "music": level_3_part_1_music,
                 "bg_gradient": [(148, 150, 92), (107, 142, 35), (154, 205, 50)],
-                "platforms": [
-                    pygame.Rect(100, 500, 100, 20),
-                    pygame.Rect(300, 400, 120, 20),
-                    pygame.Rect(500, 300, 140, 20),
-                    pygame.Rect(750, 450, 130, 20),
-                    pygame.Rect(950, 350, 110, 20),
-                    pygame.Rect(1200, 250, 150, 20),
-                    pygame.Rect(1450, 400, 140, 20),
-                    pygame.Rect(1700, 300, 120, 20),
-                    pygame.Rect(1950, 200, 130, 20),
-                    pygame.Rect(2200, 350, 160, 20),
-                    pygame.Rect(2450, 450, 140, 20),
-                    pygame.Rect(2700, 320, 130, 20),
-                    pygame.Rect(2950, 220, 120, 20),
-                    pygame.Rect(3200, 380, 150, 20),
-                    pygame.Rect(3450, 280, 140, 20),
-                    pygame.Rect(3700, 180, 130, 20),
-                    pygame.Rect(3950, 330, 160, 20),
-                    pygame.Rect(4200, 430, 140, 20),
-                    pygame.Rect(4450, 320, 130, 20),
-                    pygame.Rect(4700, 220, 120, 20)
-                ],
                 "has_boss": True,
                 "enemy_count": 1,
                 "secret_rooms": []
@@ -709,7 +679,7 @@ class LevelManager:
                     pygame.Rect(4200, 440, 140, 20)
                 ],
                 "has_boss": False,
-                "enemy_count": 10,
+                "enemy_count": 20,
                 "secret_rooms": [
                     {
                         "rect": pygame.Rect(2500, 100, 70, 70),
@@ -747,11 +717,9 @@ class LevelManager:
                     pygame.Rect(3750, 220, 120, 20),
                     pygame.Rect(4000, 370, 150, 20),
                     pygame.Rect(4250, 470, 140, 20),
-                    pygame.Rect(4500, 360, 130, 20),
-                    pygame.Rect(4750, 260, 120, 20)
                 ],
                 "has_boss": False,
-                "enemy_count": 10,
+                "enemy_count": 20,
                 "secret_rooms": [
                     {
                         "rect": pygame.Rect(3200, 150, 65, 65),
@@ -780,28 +748,6 @@ class LevelManager:
                 "width": 5000,
                 "music": level_6_part_1_music,
                 "bg_gradient": [(100, 100, 150), (178, 34, 34), (220, 20, 60)],
-                "platforms": [
-                    pygame.Rect(100, 500, 110, 20),
-                    pygame.Rect(300, 380, 120, 20),
-                    pygame.Rect(500, 260, 130, 20),
-                    pygame.Rect(750, 420, 140, 20),
-                    pygame.Rect(950, 300, 130, 20),
-                    pygame.Rect(1200, 180, 120, 20),
-                    pygame.Rect(1450, 340, 150, 20),
-                    pygame.Rect(1700, 440, 140, 20),
-                    pygame.Rect(1950, 320, 130, 20),
-                    pygame.Rect(2200, 200, 120, 20),
-                    pygame.Rect(2450, 360, 140, 20),
-                    pygame.Rect(2700, 460, 150, 20),
-                    pygame.Rect(2950, 340, 130, 20),
-                    pygame.Rect(3200, 220, 120, 20),
-                    pygame.Rect(3450, 380, 140, 20),
-                    pygame.Rect(3700, 280, 130, 20),
-                    pygame.Rect(3950, 160, 120, 20),
-                    pygame.Rect(4200, 320, 150, 20),
-                    pygame.Rect(4450, 420, 140, 20),
-                    pygame.Rect(4700, 300, 130, 20)
-                ],
                 "has_boss": True,
                 "enemy_count": 1,
                 "secret_rooms": []
@@ -833,7 +779,7 @@ class LevelManager:
                     )
                 self.level_surface.blit(self.gradient_cache[gradient_key], (0, 0))
             else:
-                # Фолбэк на старый цвет, если градиента нет
+                # Фулбэк на старый цвет, если градиента нет
                 self.level_surface.fill(level_data.get("bg_color", (92, 148, 252)))
 
             # Рисуем землю (остальной код без изменений)
@@ -1066,6 +1012,21 @@ class LevelManager:
                 load_secret_items()
                 load_secret_points()
 
+                if check_all_secrets_found(current_difficulty):
+                    # Разблокируем скин "Искатель секретов" только для текущей сложности
+                    for skin in skins:
+                        if skin["name"] == "Искатель секретов":
+                            if not skin["unlocked"]:  # Только если скин еще не был разблокирован
+                                skin["unlocked"] = True
+                                save_unlocked_skins()
+                                # Специальное сообщение с поздравлением
+                                secret_message = ("ПОЗДРАВЛЯЕМ! Вы нашли ВСЕ секреты на этой сложности!\n"
+                                                  "Разблокирован эксклюзивный скин 'Искатель секретов'!")
+                                secret_message_time = pygame.time.get_ticks()
+                                # Воспроизводим специальный звук, если есть
+                                if sound_on and secret_sound:
+                                    secret_sound.play()
+
         return secret_found
 
     def save_secret_progress(self):
@@ -1168,6 +1129,10 @@ class LevelManager:
         cursor.execute(f'DELETE FROM secrets{difficulty_suffix}')
         cursor.execute(f'DELETE FROM secret_items{difficulty_suffix}')
         cursor.execute(f'DELETE FROM secret_points{difficulty_suffix}')
+
+        # БЛОКИРУЕМ СКИН "ИСКАТЕЛЬ СЕКРЕТОВ" ТОЛЬКО ДЛЯ ТЕКУЩЕЙ СЛОЖНОСТИ
+        skins_table = f"unlocked_skins_{['easy', 'medium', 'hard'][current_difficulty]}"
+        cursor.execute(f'UPDATE {skins_table} SET unlocked = 0 WHERE skin_name = "Искатель секретов"')
 
         saving.commit()
 
@@ -1439,6 +1404,86 @@ skins = [
         "img": pygame.Surface((90, 50)),
     },
     {
+        "name": "Линк",
+        "unlocked": False,
+        "image": "Sprites and objects/Skins/Link/Link.png",
+        "walk_right": [
+            "Sprites and objects/Skins/Link/Link_right1.png",
+            "Sprites and objects/Skins/Link/Link_right2.png",
+            "Sprites and objects/Skins/Link/Link_right3.png",
+            "Sprites and objects/Skins/Link/Link_right4.png",
+        ],
+        "walk_left": [
+            "Sprites and objects/Skins/Link/Link_left1.png",
+            "Sprites and objects/Skins/Link/Link_left2.png",
+            "Sprites and objects/Skins/Link/Link_left3.png",
+            "Sprites and objects/Skins/Link/Link_left4.png",
+        ],
+        "unlock": 'Нужно 3 очка уровней',
+        "damaged": "Sprites and objects/Skins/Link/Link_damaged.png",
+        "img": pygame.Surface((40, 50)),
+    },
+    {
+        "name": "Рэд",
+        "unlocked": False,
+        "image": "Sprites and objects/Skins/Red/Red.png",
+        "walk_right": [
+            "Sprites and objects/Skins/Red/Red_right1.png",
+            "Sprites and objects/Skins/Red/Red_right2.png",
+            "Sprites and objects/Skins/Red/Red_right3.png",
+            "Sprites and objects/Skins/Red/Red_right4.png",
+        ],
+        "walk_left": [
+            "Sprites and objects/Skins/Red/Red_left1.png",
+            "Sprites and objects/Skins/Red/Red_left2.png",
+            "Sprites and objects/Skins/Red/Red_left3.png",
+            "Sprites and objects/Skins/Red/Red_left4.png",
+        ],
+        "unlock": 'Нужно 4 очка уровней',
+        "damaged": "Sprites and objects/Skins/Red/Red_damaged.png",
+        "img": pygame.Surface((40, 50)),
+    },
+    {
+        "name": "Пикачу",
+        "unlocked": False,
+        "image": "Sprites and objects/Skins/Pikachu/Pikachu.png",
+        "walk_right": [
+            "Sprites and objects/Skins/Pikachu/Pikachu_right1.png",
+            "Sprites and objects/Skins/Pikachu/Pikachu_right2.png",
+            "Sprites and objects/Skins/Pikachu/Pikachu_right3.png",
+            "Sprites and objects/Skins/Pikachu/Pikachu_right4.png",
+        ],
+        "walk_left": [
+            "Sprites and objects/Skins/Pikachu/Pikachu_left1.png",
+            "Sprites and objects/Skins/Pikachu/Pikachu_left2.png",
+            "Sprites and objects/Skins/Pikachu/Pikachu_left3.png",
+            "Sprites and objects/Skins/Pikachu/Pikachu_left4.png",
+        ],
+        "unlock": 'Нужно 3 очка уровней',
+        "damaged": "Sprites and objects/Skins/Pikachu/Pikachu_damaged.png",
+        "img": pygame.Surface((40, 50)),
+    },
+    {
+        "name": "Искатель секретов",
+        "unlocked": False,
+        "image": "Sprites and objects/Skins/Golden Freddy/Golden_Freddy.png",
+        "walk_right": [
+            "Sprites and objects/Skins/Golden Freddy/Golden_Freddy_right1.png",
+            "Sprites and objects/Skins/Golden Freddy/Golden_Freddy_right2.png",
+            "Sprites and objects/Skins/Golden Freddy/Golden_Freddy_right3.png",
+            "Sprites and objects/Skins/Golden Freddy/Golden_Freddy_right4.png",
+        ],
+        "walk_left": [
+            "Sprites and objects/Skins/Golden Freddy/Golden_Freddy_left1.png",
+            "Sprites and objects/Skins/Golden Freddy/Golden_Freddy_left2.png",
+            "Sprites and objects/Skins/Golden Freddy/Golden_Freddy_left3.png",
+            "Sprites and objects/Skins/Golden Freddy/Golden_Freddy_left4.png",
+        ],
+        "unlock": "Найдите все секретные зоны в игре",
+        "damaged": "Sprites and objects/Skins/Golden Freddy/Golden_Freddy_damaged.png",
+        "img": pygame.Surface((90, 50)),
+    },
+    {
         "name": "Бронзовый герой",
         "unlocked": False,
         "image": "Sprites and objects/Skins/Bronze/Bronze_hero.png",
@@ -1543,6 +1588,18 @@ for i in range(1, 4):
     except:
         running_sprites_right_boss.append(pygame.Surface((140, 140)))
         running_sprites_left_boss.append(pygame.Surface((140, 140)))
+
+running_sprites_right_boss_2 = []
+running_sprites_left_boss_2 = []
+for i in range(1, 4):
+    try:
+        img_right = pygame.image.load(f"Sprites and objects/Enemies/Speed/Koopa_right_{i}.png")
+        img_left = pygame.image.load(f"Sprites and objects/Enemies/Speed/Koopa_left_{i}.png")
+        running_sprites_right_boss_2.append(pygame.transform.scale(img_right, (140, 140)))
+        running_sprites_left_boss_2.append(pygame.transform.scale(img_left, (140, 140)))
+    except:
+        running_sprites_right_boss_2.append(pygame.Surface((140, 140)))
+        running_sprites_left_boss_2.append(pygame.Surface((140, 140)))
 
 running_sprites_enemy_right = []
 running_sprites_enemy_left = []
@@ -1805,11 +1862,10 @@ class Monster:
         # По умолчанию обычный враг
         self.enemy_type = "common"
 
-        # БАЗОВАЯ СКОРОСТЬ для разных типов врагов
         if self.enemy_type == "speed":
             self.speed = 8
         elif self.enemy_type == "damager":
-            self.speed = 4  # Медленнее, но сильнее бьет
+            self.speed = 4
         elif self.enemy_type == "jumper":
             self.speed = 6
         else:
@@ -1836,7 +1892,7 @@ class Monster:
 
         # Для прыгунов
         self.last_jump_time = 0
-        self.jump_cooldown = 5000  # 5 секунд между прыжками
+        self.jump_cooldown = 3000  # 3 секунд между прыжками
         self.can_jump = True
 
         # Для дамагеров
@@ -1845,7 +1901,6 @@ class Monster:
         self.spawn()
 
     def set_sprites_by_type(self):
-        """Устанавливает спрайты в зависимости от типа врага"""
         if self.enemy_type == "speed":
             self.running_sprites_enemy_right = running_sprites_enemy_right_2
             self.running_sprites_enemy_left = running_sprites_enemy_left_2
@@ -1909,13 +1964,13 @@ class Monster:
         try:
             if self.enemy_type == "speed":
                 dead_img = pygame.image.load("Sprites and objects/Enemies/Speed/Koopa_dead.png")
-                self.image = pygame.transform.scale(dead_img, (90, 28))
+                self.image = pygame.transform.scale(dead_img, (70, 50))
             elif self.enemy_type == "damager":
                 dead_img = pygame.image.load("Sprites and objects/Enemies/Damager/Doomba_dead.png")
                 self.image = pygame.transform.scale(dead_img, (90, 28))
             elif self.enemy_type == "jumper":
                 dead_img = pygame.image.load("Sprites and objects/Enemies/Jumper/Jumper_dead.png")
-                self.image = pygame.transform.scale(dead_img, (90, 28))
+                self.image = pygame.transform.scale(dead_img, (70, 50))
             else:  # common enemy
                 dead_img = pygame.image.load("Sprites and objects/Enemies/Common/Goomba_dead.png")
                 self.image = pygame.transform.scale(dead_img, (90, 28))
@@ -2012,12 +2067,23 @@ class Monster:
 class Boss:
     def __init__(self):
         current_level = level_manager.current_level
-        self.running_sprites_enemy_right = running_sprites_right_boss
-        self.running_sprites_enemy_left = running_sprites_left_boss
+        if current_level == 3:
+            boss_img = pygame.image.load("Sprites and objects/Enemies/Common/Goomba_right_1.png")
+            self.image = pygame.transform.scale(boss_img, (140, 140))
+            self.running_sprites_enemy_right = running_sprites_right_boss
+            self.running_sprites_enemy_left = running_sprites_left_boss
+        elif current_level == 6:
+            boss_img = pygame.image.load("Sprites and objects/Enemies/Speed/Koopa_right_1.png")
+            self.image = pygame.transform.scale(boss_img, (140, 140))
+            self.running_sprites_enemy_right = running_sprites_right_boss_2
+            self.running_sprites_enemy_left = running_sprites_left_boss_2
+        else:
+            # Fallback для других уровней
+            self.image = pygame.Surface((140, 140))
+            self.image.fill((150, 75, 0))
         self.current_frame_index = 0
         self.last_frame_update = pygame.time.get_ticks()
         self.frame_delay = 90
-        self.image = pygame.transform.scale(boss_image, (140, 140))
         self.rect = self.image.get_rect()
         self.x_speed = 0
         self.y_speed = 0
@@ -2209,9 +2275,15 @@ class Boss:
             self.kill()
 
     def kill(self):
+        current_level = level_manager.current_level
         try:
-            dead_img = pygame.image.load("Sprites and objects/Enemies/Common/Goomba_dead.png")
-            self.image = pygame.transform.scale(dead_img, (140, 38))
+            if current_level == 3:
+                dead_img = pygame.image.load("Sprites and objects/Enemies/Common/Goomba_dead.png")
+                self.image = pygame.transform.scale(dead_img, (140, 38))
+            elif current_level == 6:
+                dead_img = pygame.image.load("Sprites and objects/Enemies/Speed/Koopa_dead.png")
+                self.image = pygame.transform.scale(dead_img, (140, 38))
+
         except:
             self.image = pygame.Surface((140, 38))
 
@@ -2248,9 +2320,7 @@ class Boss:
 
             if self.rect.top > H:
                 self.is_out = True
-            return  # ВАЖНО: выходим из метода, чтобы не выполнять логику живого босса
-
-        # ДАЛЕЕ ВЕСЬ ОСТАЛЬНОЙ КОД ДЛЯ ЖИВОГО БОССА
+            return
 
         if self.phase == 2 and self.is_grounded:
             # Прыгает каждые 3 секунды в фазе 3
@@ -2342,6 +2412,34 @@ class Boss:
 # Создаем игрока
 player = Player()
 
+
+def check_all_secrets_found(difficulty=None):
+    global current_difficulty
+    """Проверяет, найдены ли все секреты для указанной сложности"""
+    if difficulty is None:
+        difficulty = current_difficulty
+
+    # Временно сохраняем текущую сложность
+    original_difficulty = current_difficulty
+
+    try:
+        # Устанавливаем нужную сложность для проверки
+
+        current_difficulty = difficulty
+
+        # Загружаем секреты для этой сложности
+        load_secret_items()
+        load_secret_points()
+
+        total_found = len(secret_items_collected) + len(secret_points_collected)
+        total_secrets = sum(level_manager.get_level_secrets_count(i) for i in range(1, 7))
+        return total_found >= total_secrets > 0
+    finally:
+        # Восстанавливаем исходную сложность
+        current_difficulty = original_difficulty
+        # И загружаем обратно секреты для текущей сложности
+        load_secret_items()
+        load_secret_points()
 
 def create_gradient_surface(width, height, colors):
     """Создает поверхность с вертикальным градиентом"""
@@ -2530,12 +2628,17 @@ def save_unlocked_skins():
     """Сохраняет статус разблокировки всех скинов для текущей сложности"""
     cursor = saving.cursor()
     table_name = f"unlocked_skins_{['easy', 'medium', 'hard'][current_difficulty]}"
+
+    # Очищаем таблицу для текущей сложности
     cursor.execute(f'DELETE FROM {table_name}')
-    for skin_ex in skins:
+
+    # Сохраняем все скины для текущей сложности
+    for skin in skins:
         cursor.execute(f'''
             INSERT INTO {table_name} (skin_name, unlocked) 
             VALUES (?, ?)
-        ''', (skin_ex["name"], int(skin_ex["unlocked"])))
+        ''', (skin["name"], int(skin["unlocked"])))
+
     saving.commit()
 
 
@@ -2563,11 +2666,13 @@ def load_unlocked_skins():
             ''', (skin_name, 1))
         saving.commit()
 
+    # Загружаем статус разблокировки для текущей сложности
     cursor.execute(f'SELECT skin_name, unlocked FROM {table_name}')
     results = cursor.fetchall()
 
     unlocked_skins_dict = {row[0]: bool(row[1]) for row in results}
 
+    # Обновляем статус в памяти только для текущей сложности
     for skin in skins:
         if skin["name"] in unlocked_skins_dict:
             skin["unlocked"] = unlocked_skins_dict[skin["name"]]
@@ -2577,6 +2682,23 @@ def load_unlocked_skins():
                 skin["unlocked"] = True
             else:
                 skin["unlocked"] = False
+
+
+def lock_secret_hunter_skin():
+    """Блокирует скин 'Искатель секретов' только на текущей сложности"""
+    cursor = saving.cursor()
+    table_name = f"unlocked_skins_{['easy', 'medium', 'hard'][current_difficulty]}"
+
+    # Блокируем скин в базе данных
+    cursor.execute(f'UPDATE {table_name} SET unlocked = 0 WHERE skin_name = "Искатель секретов"')
+
+    # Блокируем скин в памяти
+    for skin in skins:
+        if skin["name"] == "Искатель секретов":
+            skin["unlocked"] = False
+            break
+
+    saving.commit()
 
 
 def apply_skin(skin_index):
@@ -2717,7 +2839,7 @@ def change_difficulty(new_difficulty):
     save_settings_sql()
     load_upgrades()
     load_skin()
-    load_unlocked_skins()
+    load_unlocked_skins()  # Загружаем скины для новой сложности
     apply_skin(current_skin_index)
     load_secret_items()
     load_secret_points()
@@ -2747,7 +2869,7 @@ def check_all_levels_completed(difficulty):
 
 
 def unlock_completion_skins():
-    """Разблокирует скины за прохождение всех уровней на разных сложностях"""
+    """Разблокирует скины за прохождение всех уровней и нахождение всех секретов"""
     # Проверяем каждую сложность и разблокируем соответствующие скины
     if check_all_levels_completed(0):  # Легкая сложность
         for skin in skins:
@@ -2763,6 +2885,20 @@ def unlock_completion_skins():
         for skin in skins:
             if skin["name"] == "Золотой легенда":
                 skin["unlocked"] = True
+
+    # Проверяем все секреты для каждой сложности отдельно
+    for difficulty in [0, 1, 2]:
+        if check_all_secrets_found(difficulty):
+            for skin in skins:
+                if skin["name"] == "Искатель секретов":
+                    # Разблокируем только если скин не заблокирован принудительно
+                    cursor = saving.cursor()
+                    table_name = f"unlocked_skins_{['easy', 'medium', 'hard'][difficulty]}"
+                    cursor.execute(f'SELECT unlocked FROM {table_name} WHERE skin_name = "Искатель секретов"')
+                    result = cursor.fetchone()
+                    if result and bool(result[0]):
+                        skin["unlocked"] = True
+                    break
 
     # Сохраняем статус разблокировки
     save_unlocked_skins()
@@ -2837,6 +2973,34 @@ def pause():
 
         pygame.display.flip()
         clock.tick(FPS)
+
+
+def get_secrets_progress(difficulty=None):
+    global current_difficulty
+    """Возвращает прогресс по секретам для указанной сложности"""
+    if difficulty is None:
+        difficulty = current_difficulty
+
+    # Временно сохраняем текущую сложность
+    original_difficulty = current_difficulty
+
+    try:
+        # Устанавливаем нужную сложность для проверки
+        current_difficulty = difficulty
+
+        # Загружаем секреты для этой сложности
+        load_secret_items()
+        load_secret_points()
+
+        total_found = len(secret_items_collected) + len(secret_points_collected)
+        total_secrets = sum(level_manager.get_level_secrets_count(i) for i in range(1, 7))
+        return total_found, total_secrets
+    finally:
+        # Восстанавливаем исходную сложность
+        current_difficulty = original_difficulty
+        # И загружаем обратно секреты для текущей сложности
+        load_secret_items()
+        load_secret_points()
 
 
 # Функция для правильного склонения числительных
@@ -3038,16 +3202,16 @@ def skin_menu():
     global current_skin_index, confirmed_skin_index, message, message_time, player_points_easy, player_points_medium, player_points_hard
 
     load_upgrades()
-    load_unlocked_skins()
-    load_skin()  # Загружаем скин для ТЕКУЩЕЙ сложности
-    unlock_completion_skins()  # Проверяем и разблокируем скины за полное прохождение
+    load_unlocked_skins()  # Загружаем скины для ТЕКУЩЕЙ сложности
+    load_skin()
+    unlock_completion_skins()
 
     # Сбрасываем confirmed_skin_index на актуальный для текущей сложности
     confirmed_skin_index = current_skin_index
 
     in_skin_menu = True
     points_text = 0
-    selected_skin_index = confirmed_skin_index  # Начинаем с текущего выбранного скина
+    selected_skin_index = confirmed_skin_index
 
     last_move_time_up_skins = 0
     last_move_time_down_skins = 0
@@ -3066,7 +3230,6 @@ def skin_menu():
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    # При выходе сохраняем выбранный скин для текущей сложности
                     save_skin()
                     main_menu()
                     return
@@ -3076,22 +3239,24 @@ def skin_menu():
 
                         if skin["unlocked"]:
                             current_skin_index = selected_skin_index
-                            confirmed_skin_index = selected_skin_index  # Обновляем подтвержденный скин
+                            confirmed_skin_index = selected_skin_index
                             apply_skin(current_skin_index)
-                            save_skin()  # Сохраняем сразу при выборе
+                            save_skin()
                             show_message(f"Скин '{skin['name']}' выбран!")
                         else:
-                            if skin["name"] == "Фредди":
-                                has_enough_points = False
-                                if current_difficulty == 0 and player_points_easy >= 2:
-                                    has_enough_points = True
-                                elif current_difficulty == 1 and player_points_medium >= 2:
-                                    has_enough_points = True
-                                elif current_difficulty == 2 and player_points_hard >= 2:
-                                    has_enough_points = True
+                            # ПРОВЕРЯЕМ ОЧКИ ТОЛЬКО ДЛЯ ТЕКУЩЕЙ СЛОЖНОСТИ
+                            current_points = 0
+                            if current_difficulty == 0:
+                                current_points = player_points_easy
+                            elif current_difficulty == 1:
+                                current_points = player_points_medium
+                            elif current_difficulty == 2:
+                                current_points = player_points_hard
 
-                                if has_enough_points:
+                            if skin["name"] == "Фредди":
+                                if current_points >= 2:
                                     skin["unlocked"] = True
+                                    # ТРАТИМ ОЧКИ ТОЛЬКО НА ТЕКУЩЕЙ СЛОЖНОСТИ
                                     if current_difficulty == 0:
                                         player_points_easy -= 2
                                     elif current_difficulty == 1:
@@ -3104,10 +3269,70 @@ def skin_menu():
                                     apply_skin(current_skin_index)
                                     save_upgrades()
                                     save_skin()
-                                    save_unlocked_skins()
+                                    save_unlocked_skins()  # Сохраняем разблокировку для текущей сложности
                                     show_message(f"Скин 'Фредди' разблокирован! -2 очка")
                                 else:
                                     show_message(f"Недостаточно очков! Нужно 2 очка уровня")
+
+                            elif skin["name"] == "Линк":
+                                if current_points >= 3:
+                                    skin["unlocked"] = True
+                                    if current_difficulty == 0:
+                                        player_points_easy -= 3
+                                    elif current_difficulty == 1:
+                                        player_points_medium -= 3
+                                    elif current_difficulty == 2:
+                                        player_points_hard -= 3
+
+                                    current_skin_index = selected_skin_index
+                                    confirmed_skin_index = selected_skin_index
+                                    apply_skin(current_skin_index)
+                                    save_upgrades()
+                                    save_skin()
+                                    save_unlocked_skins()
+                                    show_message(f"Скин 'Линк' разблокирован! -3 очка")
+                                else:
+                                    show_message(f"Недостаточно очков! Нужно 3 очка уровня")
+
+                            elif skin["name"] == "Рэд":
+                                if current_points >= 4:
+                                    skin["unlocked"] = True
+                                    if current_difficulty == 0:
+                                        player_points_easy -= 4
+                                    elif current_difficulty == 1:
+                                        player_points_medium -= 4
+                                    elif current_difficulty == 2:
+                                        player_points_hard -= 4
+
+                                    current_skin_index = selected_skin_index
+                                    confirmed_skin_index = selected_skin_index
+                                    apply_skin(current_skin_index)
+                                    save_upgrades()
+                                    save_skin()
+                                    save_unlocked_skins()
+                                    show_message(f"Скин 'Рэд' разблокирован! -4 очка")
+                                else:
+                                    show_message(f"Недостаточно очков! Нужно 4 очка уровня")
+
+                            elif skin["name"] == "Пикачу":
+                                if current_points >= 3:
+                                    skin["unlocked"] = True
+                                    if current_difficulty == 0:
+                                        player_points_easy -= 3
+                                    elif current_difficulty == 1:
+                                        player_points_medium -= 3
+                                    elif current_difficulty == 2:
+                                        player_points_hard -= 3
+
+                                    current_skin_index = selected_skin_index
+                                    confirmed_skin_index = selected_skin_index
+                                    apply_skin(current_skin_index)
+                                    save_upgrades()
+                                    save_skin()
+                                    save_unlocked_skins()
+                                    show_message(f"Скин 'Пикачу' разблокирован! -3 очка")
+                                else:
+                                    show_message(f"Недостаточно очков! Нужно 3 очка уровня")
                             else:
                                 show_message(skin["unlock"])
 
@@ -3150,8 +3375,8 @@ def skin_menu():
                 skin_selected["unlocked"] = player.double_jump_unlocked
 
         for idx, skin_0 in enumerate(skins):
-            y_pos = H // 4 + (idx % 6) * 60
-            x_pos = W // 2 - 250 if idx < 6 else W // 2 + 200
+            y_pos = H // 4 + (idx % 7) * 60
+            x_pos = W // 2 - 250 if idx < 7 else W // 2 + 200
 
             # Определяем цвет текста
             is_selected = idx == selected_skin_index
@@ -3180,6 +3405,38 @@ def skin_menu():
                 else:
                     status = "Открыт"
                     status_color = (0, 255, 0)
+            elif skin_0["name"] == "Линк":
+                if not skin_0["unlocked"]:
+                    status = f"3 очка"
+                    status_color = (255, 0, 0)
+                else:
+                    status = "Открыт"
+                    status_color = (0, 255, 0)
+            elif skin_0["name"] == "Рэд":
+                if not skin_0["unlocked"]:
+                    status = f"4 очка"
+                    status_color = (255, 0, 0)
+                else:
+                    status = "Открыт"
+                    status_color = (0, 255, 0)
+            elif skin_0["name"] == "Пикачу":
+                if not skin_0["unlocked"]:
+                    status = f"3 очка"
+                    status_color = (255, 0, 0)
+                else:
+                    status = "Открыт"
+                    status_color = (0, 255, 0)
+            elif skin_0["name"] == "Искатель секретов":
+                # Проверяем конкретно для текущей сложности
+                if check_all_secrets_found(current_difficulty):
+                    status = "Открыт"
+                    status_color = (0, 255, 0)
+                else:
+                    # Показываем прогресс для текущей сложности
+                    total_found = len(secret_items_collected) + len(secret_points_collected)
+                    total_secrets = sum(level_manager.get_level_secrets_count(i) for i in range(1, 7))
+                    status = f"{total_found}/{total_secrets}"
+                    status_color = (255, 165, 0)  # Оранжевый для прогресса
             elif skin_0["unlocked"]:
                 status = "Открыт"
                 status_color = (0, 255, 0)
@@ -3275,18 +3532,18 @@ def settings():
                         # 2. Сбрасываем улучшения
                         cursor.execute(f'DELETE FROM {upgrades_table}')
                         cursor.execute(f'''
-                                INSERT INTO {upgrades_table} 
-                                (id, player_points, attack, HP, running_unlocked, double_jump_unlocked, shield) 
-                                VALUES (1, 0, 1, 3, 0, 0, 0)
-                            ''')
+                                    INSERT INTO {upgrades_table} 
+                                    (id, player_points, attack, HP, running_unlocked, double_jump_unlocked, shield) 
+                                    VALUES (1, 0, 1, 3, 0, 0, 0)
+                                ''')
 
                         # 3. Сбрасываем уровни
                         cursor.execute(f'DELETE FROM {levels_table}')
                         for level_num in range(1, 10):
                             cursor.execute(f'''
-                                    INSERT INTO {levels_table} (level_number, cleared) 
-                                    VALUES (?, ?)
-                                ''', (level_num, 0))
+                                        INSERT INTO {levels_table} (level_number, cleared) 
+                                        VALUES (?, ?)
+                                    ''', (level_num, 0))
 
                         # 4. Сбрасываем секреты только для текущей сложности
                         difficulty_suffix = ['_easy', '_medium', '_hard'][current_difficulty]
@@ -3300,9 +3557,18 @@ def settings():
                         default_skins = ["Классика", "Потерянный", "Селена", "Мона"]
                         for skin_name in default_skins:
                             cursor.execute(f'''
-                                    INSERT INTO {skins_table} (skin_name, unlocked) 
+                                        INSERT INTO {skins_table} (skin_name, unlocked) 
+                                        VALUES (?, ?)
+                                    ''', (skin_name, 1))
+
+                        # Блокируем все остальные скины для текущей сложности
+                        paid_skins = ["Фредди", "Линк", "Рэд", "Пикачу", "Соник", "Марио", "Искатель секретов",
+                                      "Бронзовый герой", "Чемпион", "Золотой легенда"]
+                        for skin_name in paid_skins:
+                            cursor.execute(f'''
+                                    INSERT OR REPLACE INTO {skins_table} (skin_name, unlocked) 
                                     VALUES (?, ?)
-                                ''', (skin_name, 1))
+                                ''', (skin_name, 0))
 
                         # 6. Сбрасываем глобальные переменные
                         if current_difficulty == 0:
@@ -3329,7 +3595,7 @@ def settings():
                         # 9. Сбрасываем скин на стандартный для текущей сложности
                         current_skin_index = 0
                         apply_skin(current_skin_index)
-                        save_skin()  # Сохраняем сброшенный скин
+                        save_skin()
 
                         saving.commit()
                         save_secret_items()
@@ -3338,6 +3604,8 @@ def settings():
                         save_skin()
                         load_upgrades()
                         load_unlocked_skins()  # Перезагружаем скины
+
+                        show_message("Прогресс сброшен для текущей сложности!")
 
 
                     elif selected_idx == 5:  # Сохранить настройки
@@ -3652,8 +3920,15 @@ def secrets():
                 draw_text(stat, font_small, color, screen, W // 2, y_offset + i * 30)
 
         # Сообщение, если все секреты найдены
+        total_found, total_secrets = get_secrets_progress(current_difficulty)
+
         if total_found >= total_secrets > 0:
-            draw_text("ВЫ НАШЛИ ВСЕ СЕКРЕТЫ! ПОЗДРАВЛЯЕМ!", font_medium, (255, 215, 0), screen, W // 2, H - 100)
+            draw_text("ВЫ НАШЛИ ВСЕ СЕКРЕТЫ НА ЭТОЙ СЛОЖНОСТИ! ПОЗДРАВЛЯЕМ!", font_medium, (255, 215, 0), screen,
+                      W // 2, H - 100)
+            draw_text("Разблокирован скин 'Искатель секретов'!", font_small, (255, 215, 0), screen, W // 2, H - 70)
+        else:
+            draw_text(f"Найдите все секреты на этой сложности для разблокировки особого скина!", font_small,
+                      (200, 200, 0), screen, W // 2, H - 70)
 
         draw_text("Нажмите ESC для возврата", font_small, (255, 255, 255), screen, W // 2, H - 50)
 
@@ -3672,6 +3947,7 @@ def level_menu():
         play_menu_music()
 
     load_secret_items()
+    load_upgrades()
     cursor = saving.cursor()
     table_name = ['levels_easy', 'levels_medium', 'levels_hard'][current_difficulty]
 
@@ -3831,12 +4107,8 @@ def run_level(level_num):
         playing_level = False
         return
     level_data = level_manager.levels[level_num]
-    load_upgrades()
 
-    # ИНИЦИАЛИЗИРУЕМ HP ПРАВИЛЬНО
     HP = player.HP  # Сначала получаем текущее HP игрока
-
-    # Пытаемся загрузить сохранение
     loaded_level = load_game_sql()
     if loaded_level == level_num:
         # Если есть сохранение для этого уровня, используем загруженное HP
@@ -3846,6 +4118,7 @@ def run_level(level_num):
         player.HP = player.max_HP
         HP = player.max_HP
         level_manager.scroll_pos = 0
+    load_upgrades()
 
     player.respawn()
     player.rect.midbottom = (W // 2, H - GROUND_H)
@@ -4044,20 +4317,22 @@ def run_boss_preparation(level_num):
             1: {"common": 7, "speed": 7},
             2: {"common": 10, "speed": 10}
         }
+        counts = enemy_counts.get(current_difficulty, enemy_counts[0])
+        required_common = counts["common"]
+        required_speed = counts["speed"]
+        common_killed = 0
+        speed_killed = 0
     else:  # Подготовка к финальному боссу (уровень 6)
         enemy_counts = {
-            0: {"damager": 4, "jumper": 4},  # Дамагеры и прыгуны
-            1: {"damager": 5, "jumper": 5},
-            2: {"damager": 6, "jumper": 6}
+            0: {"damager": 5, "jumper": 5},  # Дамагеры и прыгуны
+            1: {"damager": 7, "jumper": 7},
+            2: {"damager": 10, "jumper": 10}
         }
-
-    counts = enemy_counts.get(current_difficulty, enemy_counts[0])
-    required_common = counts["common"]
-    required_speed = counts["speed"]
-
-    # Счетчики убитых врагов по типам
-    common_killed = 0
-    speed_killed = 0
+        counts = enemy_counts.get(current_difficulty, enemy_counts[0])
+        required_common = counts["damager"]   # Используем damager вместо common
+        required_speed = counts["jumper"]     # Используем jumper вместо speed
+        common_killed = 0
+        speed_killed = 0
 
     # Списки врагов
     monsters = []
@@ -4121,13 +4396,16 @@ def run_boss_preparation(level_num):
             # Определяем тип врага в зависимости от уровня
             if level_num == 3:  # Подготовка к боссу 3 уровня
                 # Для 3 уровня оставляем обычных врагов
-                enemy_type = random.choice(["common", "speed"])
+                if common_killed < required_common:
+                    enemy_type = "common"
+                else:
+                    enemy_type = "speed"
             elif level_num == 6:  # Подготовка к боссу 6 уровня
                 # Для 6 уровня используем врагов с соответствующих уровней
-                if common_killed < required_common:
-                    enemy_type = "damager"  # Дамагеры с 4 уровня
+                if common_killed < required_common:  # common_killed теперь для дамагеров
+                    enemy_type = "damager"
                 else:
-                    enemy_type = "jumper"  # Прыгуны с 5 уровня
+                    enemy_type = "jumper"
             else:
                 enemy_type = "common"
 
@@ -4163,6 +4441,7 @@ def run_boss_preparation(level_num):
         # Обновление врагов
         for monster in list(monsters):
             monster.update()
+            damage_taken = monster.damage_amount
 
             # Проверка коллизий
             if not player.is_dead and player.rect.colliderect(monster.rect) and not monster.is_dead:
@@ -4177,16 +4456,20 @@ def run_boss_preparation(level_num):
 
                     # Увеличиваем счетчик соответствующего типа
                     if hasattr(monster, 'enemy_type'):
-                        if monster.enemy_type == "common":
-                            common_killed += 1
-                        else:
-                            speed_killed += 1
+                        if level_num == 3:
+                            if monster.enemy_type == "common":
+                                common_killed += 1
+                            else:
+                                speed_killed += 1
+                        else:  # level_num == 6
+                            if monster.enemy_type == "damager":
+                                common_killed += 1  # common_killed для дамагеров
+                            else:
+                                speed_killed += 1   # speed_killed для прыгунов
 
                     # Проверяем, активировался ли портал
                     if not portal_active and common_killed >= required_common and speed_killed >= required_speed:
                         portal_active = True
-                        show_message("Портал активирован! Идите к порталу для битвы с боссом!")
-
                 elif not monster.damage_given and not invincible:
                     # Игрок получает урон
                     if Shield >= 1:
@@ -4196,7 +4479,7 @@ def run_boss_preparation(level_num):
                         invincible = True
                         invincible_end_time = now + 1000
                     else:
-                        HP -= 1
+                        HP -= damage_taken
                         player.damaged()
                         monster.damage_given = True
                         invincible = True
