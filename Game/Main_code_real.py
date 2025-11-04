@@ -3079,7 +3079,7 @@ def management_menu():
             "Сохранение: S",
             "Выбор опции: W / ↑, S / ↓",
             "Подтверждение: Enter",
-            "Увеличение / уменьшение характеристик: A / ←, D / →"
+            "Увеличение характеристик: D / →"
         ]
         for j, control in enumerate(controls):
             draw_text(control, font_small, (0, 0, 0), screen, W // 2, H // 4 + j * 40)
@@ -3272,6 +3272,9 @@ def skin_menu():
                 save_settings_sql()
                 save_secret_items()
                 save_skin()
+                load_secret_items()
+                load_settings_sql()
+                load_skin()
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
@@ -3760,6 +3763,8 @@ def upgrade():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                save_upgrades()
+                load_upgrades()
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
@@ -5232,7 +5237,7 @@ def complete_level(level_num, is_boss=False):
 
     # Формируем понятное сообщение с правильным склонением
     if is_boss:
-        base_message = f"Кошмар побежден! +{format_points(reward)}"
+        base_message = f"Кошмар побежден! +{format_points(reward + 1)}"
     else:
         base_message = f"Воспоминание восстановлено! +{format_points(reward)}"
 
