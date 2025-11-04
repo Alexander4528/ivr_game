@@ -3293,7 +3293,6 @@ def skin_menu():
                             save_skin()
                             show_message(f"Скин '{skin['name']}' выбран!")
                         else:
-                            # ПРОВЕРЯЕМ ОЧКИ ТОЛЬКО ДЛЯ ТЕКУЩЕЙ СЛОЖНОСТИ
                             current_points = 0
                             if current_difficulty == 0:
                                 current_points = player_points_easy
@@ -3304,8 +3303,9 @@ def skin_menu():
 
                             if skin["name"] == "Фредди":
                                 if current_points >= 2:
+                                    if sound_on:
+                                        Unlock_skin_sound.play()
                                     skin["unlocked"] = True
-                                    # ТРАТИМ ОЧКИ ТОЛЬКО НА ТЕКУЩЕЙ СЛОЖНОСТИ
                                     if current_difficulty == 0:
                                         player_points_easy -= 2
                                     elif current_difficulty == 1:
@@ -3325,6 +3325,8 @@ def skin_menu():
 
                             elif skin["name"] == "Линк":
                                 if current_points >= 3:
+                                    if sound_on:
+                                        Unlock_skin_sound.play()
                                     skin["unlocked"] = True
                                     if current_difficulty == 0:
                                         player_points_easy -= 3
@@ -3345,6 +3347,8 @@ def skin_menu():
 
                             elif skin["name"] == "Рэд":
                                 if current_points >= 4:
+                                    if sound_on:
+                                        Unlock_skin_sound.play()
                                     skin["unlocked"] = True
                                     if current_difficulty == 0:
                                         player_points_easy -= 4
@@ -3365,6 +3369,8 @@ def skin_menu():
 
                             elif skin["name"] == "Пикачу":
                                 if current_points >= 3:
+                                    if sound_on:
+                                        Unlock_skin_sound.play()
                                     skin["unlocked"] = True
                                     if current_difficulty == 0:
                                         player_points_easy -= 3
