@@ -1936,7 +1936,7 @@ class Monster:
 
         # Для прыгунов
         self.last_jump_time = 0
-        self.jump_cooldown = 3000  # 3 секунд между прыжками
+        self.jump_cooldown = 2000  # 3 секунд между прыжками
         self.can_jump = True
 
         # Для дамагеров
@@ -3655,7 +3655,6 @@ def settings():
 
                         show_message("Прогресс сброшен для текущей сложности!")
 
-
                     elif selected_idx == 5:  # Сохранить настройки
                         # Сохраняем текущий скин
                         save_skin()
@@ -4747,10 +4746,6 @@ def run_enemy_wave(level_num, enemy_count):
                         invincible = True
                         invincible_end_time = now + 1000
 
-                        # Показываем сообщение о повышенном уроне
-                        if damage_taken > 1:
-                            show_message(f"Критический удар! -{damage_taken} HP")
-
                     if HP <= 0:
                         player.kill(player.damaged_sprite)
                         show_message("Вы погибли!")
@@ -4789,6 +4784,9 @@ def run_enemy_wave(level_num, enemy_count):
             draw_text("Осторожно! Думбы наносят 2 единицы урона!", font_small, (255, 0, 0), screen, W // 2, 70)
         elif level_num == 5:
             draw_text("Осторожно! Прыгуны!", font_small, (0, 0, 255), screen, W // 2, 70)
+        elif level_num == 2:
+            draw_text("Осторожно! Купы - эти враги двигаются быстрее!", font_small,
+                      (0, 255, 0), screen, W // 2, 70)
 
         if save_message_displayed and pygame.time.get_ticks() - save_message_timer < 2000:
             draw_text_with_background("Игра сохранена", font_small, (0, 0, 0), (255, 255, 255), screen, W // 2, H // 2)
