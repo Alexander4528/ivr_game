@@ -29,7 +29,9 @@ difficulty_level = 0
 current_difficulty = 0
 dark_mode = False
 pending_mode = dark_mode
-background_image = (42, 98, 202) if dark_mode else (92, 148, 252)
+menu_light_gradient = [(92, 148, 252), (35, 55, 225), (30, 144, 255)]
+menu_dark_gradient = [(22, 68, 202), (20, 20, 112), (25, 25, 128)]
+background_gradient = menu_light_gradient
 save_message_displayed = False
 save_message_timer = 0
 unlock_message = ""
@@ -316,25 +318,37 @@ cutscenes = {
         "background": home_background,
         "dialogues": [
             {
-                "character": "Внутренний голос",
+                "character": "Главный герой",
                 "character_image": parents_image,
                 "text": "Мне родители только мешают! Я пытаюсь жить и радоваться жизни! "
                         "А им лишь бы меня ругать и заставлять что-то делать!..."
             },
             {
-                "character": "Внутренний голос",
+                "character": "Главный герой",
                 "character_image": None,
-                "text": "'Я всегда виноват', да?! 'Плохо себя веду и вообще я плохой'! Ничего они не понимают!"
+                "text": "'Я всегда виноват', да?! 'Плохо себя веду и вообще я плохой'!"
             },
             {
-                "character": "",
+                "character": "Главный герой",
                 "character_image": None,
                 "text": "*Я захожу к себе в спальню, пиная дверь, и ложусь на кровать с ужасным настроением*"
+                        "Ничего они не понимают!!!"
             },
             {
-                "character": "Внутренний голос",
+                "character": "Главный герой",
                 "character_image": None,
-                "text": "Сон - единственное место, где никто, ничего и никогда не скажет плохого мне в лицо..."
+                "text": "Ничего они не понимают!!!"
+            },
+            {
+                "character": "Главный герой",
+                "character_image": None,
+                "text": "*вздох*"
+            },
+            {
+                "character": "Главный герой",
+                "character_image": None,
+                "text": "Я хотя бы во сне могу быть спокоен..."
+                        "Сон - единственное место, где никто, ничего и никогда не скажет плохого мне в лицо..."
             }
         ]
     },
@@ -344,17 +358,20 @@ cutscenes = {
             {
                 "character": "Внутренний голос",
                 "character_image": None,
-                "text": "Помнишь, как мы ездили на озеро тем летом? Папа учил меня плавать... Мама готовила бутерброды..."
+                "text": "Помню, как мы ездили на озеро тем летом? Папа учил меня плавать... "
+                        "Мама готовила бутерброды..."
             },
             {
                 "character": "Внутренний голос",
                 "character_image": None,
-                "text": "Тогда все было проще. Они ссорились и тогда, но всегда мирились к вечеру... Почему сейчас все по-другому?"
+                "text": "Тогда все было проще. Они ссорились и тогда, но всегда мирились к вечеру... "
+                        "Почему сейчас все по-другому?"
             },
             {
                 "character": "Внутренний голос",
                 "character_image": None,
                 "text": "Может быть... Может быть, они просто устали? Взрослые ведь тоже иногда ломаются..."
+                        "Может быть... я тоже сломался...?"
             }
         ]
     },
@@ -369,33 +386,13 @@ cutscenes = {
             {
                 "character": "Внутренний голос",
                 "character_image": None,
-                "text": "Мама плакала от гордости у бассейна. После объявления у меня 1-го места она обняла меня так крепко..."
+                "text": "Мама гордилась мной у бассейна. После объявления у меня 1-го места она обняла меня так крепко..."
                         "Папа тоже..."
             },
             {
                 "character": "Внутренний голос",
                 "character_image": None,
-                "text": "Они всегда верили в меня... Даже когда я сам в себя не верил. А я... я перестал верить в них."
-            }
-        ]
-    },
-    "level3_complete": {
-        "background": None,
-        "dialogues": [
-            {
-                "character": "Внутренний голос",
-                "character_image": None,
-                "text": "Тот день, когда папа потерял работу... Я видел, как он плакал в гараже. Думал, я не заметил..."
-            },
-            {
-                "character": "Внутренний голос",
-                "character_image": None,
-                "text": "Мама взяла вторую работу. Они перестали разговаривать за ужином... А я злился на них за это."
-            },
-            {
-                "character": "Внутренний голос",
-                "character_image": None,
-                "text": "Но сейчас я понимаю... Они не злые. Они просто сломленные. И им тоже больно."
+                "text": "Они всегда верили в меня... Даже когда я сам в себя не верил."
             }
         ]
     },
@@ -411,6 +408,7 @@ cutscenes = {
                 "character": "Внутренний голос",
                 "character_image": None,
                 "text": "Я так долго носил в себе эту злость на них... Думал, они специально разрушают нашу семью."
+                        "Думал они хотят ...мне всё испортить..."
             },
             {
                 "character": "Внутренний голос",
@@ -425,17 +423,19 @@ cutscenes = {
             {
                 "character": "Внутренний голос",
                 "character_image": None,
-                "text": "Помнишь наши субботние завтраки? Мама готовила оладьи, папа рассказывал смешные истории..."
+                "text": "Помню как я сдал вступительные экзамены, чтобы перевестись в школу получше..."
+                        "Мама и папа мной гордились..."
             },
             {
                 "character": "Внутренний голос",
                 "character_image": None,
-                "text": "Иногда он задерживался на работе, и мама грустила... Но когда он возвращался, она снова улыбалась."
+                "text": "Да... иногда были конфликты... Но всё же..."
             },
             {
                 "character": "Внутренний голос",
                 "character_image": None,
-                "text": "Они всегда находили способ быть вместе... Даже когда было трудно. Может, и сейчас найдут?"
+                "text": "Мои родители всегда находили способ быть вместе... "
+                        "Даже когда было трудно. Может, и сейчас найдут?"
             }
         ]
     },
@@ -445,22 +445,25 @@ cutscenes = {
             {
                 "character": "Внутренний голос",
                 "character_image": None,
-                "text": "Тот вечер, когда я заболел... Мама не отходила от моей кровати всю ночь."
+                "text": "Тот день, когда я получил перелом левой руки... "
+                        "Родители от меня не отходили, пока я был с гипсом"
             },
             {
                 "character": "Внутренний голос",
                 "character_image": None,
-                "text": "В самые трудные моменты они всегда были рядом... А сейчас их трудный момент. И где же я?"
+                "text": "В самые трудные моменты мама и папа всегда были рядом... "
+                        "А сейчас их трудный момент. И где же я?"
             },
             {
                 "character": "Внутренний голос",
                 "character_image": None,
-                "text": "Я прячусь в своих снах... В своих обидах... А им, наверное, так же страшно и одиноко, как мне."
-            }
+                "text": "Я прячусь в своих снах... В своих обидах..."
+                        "А им, наверное, так же страшно и одиноко, как мне."
+            },
         ]
     },
     "game_complete": {
-        "background": home_background,
+        "background": None,
         "dialogues": [
             {
                 "character": "Внутренний голос",
@@ -475,7 +478,8 @@ cutscenes = {
             {
                 "character": "Внутренний голос",
                 "character_image": None,
-                "text": "Папа не злой... Он напуган. Мама не холодная... Она устала. А я... я был слеп."
+                "text": "Папа не злой..., а мама ...не такая холодная, как я думал... Она устала. А я... я был слеп."
+                        "Я был слишком вспыльчивым, чтобы это увидеть..."
             },
             {
                 "character": "Внутренний голос",
@@ -505,7 +509,7 @@ cutscenes = {
             {
                 "character": "Главный герой",
                 "character_image": None,
-                "text": "Я вас понимаю... И я вас люблю. Мы справимся. Вместе."
+                "text": "И вы меня простите... И я вас люблю. Мы справимся вместе."
             },
             {
                 "character": "Мама",
@@ -516,6 +520,56 @@ cutscenes = {
                 "character": "Папа",
                 "character_image": parents_image,
                 "text": "Да... Вместе. Как раньше. Мы найдем выход. Главное, что у нас есть ты."
+            },
+            {
+                "character": " ",
+                "character_image": None,
+                "text": "..."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Иногда кто-то сталкиваешься с трудной задачей, и... думает, что её решить невозможно..."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Но... это только если он не верит..., что это возможно..."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Кому-то прошлое может причинять боль..."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Но только если прошлому позволять управлять настоящим"
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "А кто-то... считает, то все его проблемы... из-за окружающего в его мире..."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Считает, что его все, даже родители..., отвергли, ненавидят..."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "Но... только посмотрев на себя... и изменившись, можно сделать мир вокруг себя лучше."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "и изменившись,..."
+            },
+            {
+                "character": "Внутренний голос",
+                "character_image": None,
+                "text": "можно сделать мир вокруг себя лучше."
             }
         ]
     }
@@ -608,26 +662,16 @@ class LevelManager:
                 "music": level_2_part_1_music,
                 "bg_gradient": [(186, 85, 211), (153, 50, 204), (106, 13, 173)],
                 "platforms": [
-                    pygame.Rect(150, 630, 120, 20),
-                    pygame.Rect(350, 500, 140, 20),
-                    pygame.Rect(600, 570, 150, 20),
-                    pygame.Rect(800, 450, 130, 20),
+                    pygame.Rect(600, 630, 150, 20),
                     pygame.Rect(1000, 520, 160, 20),
-                    pygame.Rect(1250, 400, 110, 20),
                     pygame.Rect(1450, 480, 170, 20),
-                    pygame.Rect(1700, 350, 150, 20),
                     pygame.Rect(1950, 550, 140, 20),
-                    pygame.Rect(2200, 420, 130, 20),
                     pygame.Rect(2450, 500, 160, 20),
-                    pygame.Rect(2700, 380, 120, 20),
                     pygame.Rect(2950, 470, 150, 20),
-                    pygame.Rect(3200, 580, 140, 20),
                     pygame.Rect(3450, 420, 130, 20),
-                    pygame.Rect(3700, 520, 160, 20),
                     pygame.Rect(3950, 350, 110, 20),
                     pygame.Rect(4200, 450, 150, 20),
                     pygame.Rect(4450, 550, 140, 20),
-                    pygame.Rect(4700, 400, 130, 20)
                 ],
                 "has_boss": False,
                 "enemy_count": 15,
@@ -676,7 +720,7 @@ class LevelManager:
                     pygame.Rect(3450, 290, 130, 20),
                     pygame.Rect(3700, 190, 120, 20),
                     pygame.Rect(3950, 340, 150, 20),
-                    pygame.Rect(4200, 440, 140, 20)
+                    pygame.Rect(4200, 500, 140, 20)
                 ],
                 "has_boss": False,
                 "enemy_count": 20,
@@ -1464,7 +1508,7 @@ skins = [
         "img": pygame.Surface((40, 50)),
     },
     {
-        "name": "Искатель секретов",
+        "name": "Золотой Фредди",
         "unlocked": False,
         "image": "Sprites and objects/Skins/Golden Freddy/Golden_Freddy.png",
         "walk_right": [
@@ -2486,7 +2530,7 @@ def save_settings_sql():
 
 
 def load_settings_sql():
-    global current_difficulty, difficulty_level, dark_mode, background_image, pending_mode, music_on, sound_on
+    global current_difficulty, difficulty_level, dark_mode, background_gradient, pending_mode, music_on, sound_on
     cursor = saving.cursor()
     cursor.execute('SELECT music_on, sound_on, player_points, difficulty_level, dark_mode FROM settings LIMIT 1')
     row = cursor.fetchone()
@@ -2497,7 +2541,7 @@ def load_settings_sql():
         difficulty_level = current_difficulty
         dark_mode = bool(row[4])
         pending_mode = dark_mode
-        background_image = (42, 98, 202) if dark_mode else (92, 148, 252)
+        background_gradient = menu_dark_gradient if pending_mode else menu_light_gradient
 
 
 def save_game_sql(level_number):
@@ -3024,7 +3068,8 @@ def management_menu():
                 if event.key == pygame.K_ESCAPE:
                     return
 
-        screen.fill(background_image)
+        gradient_bg = create_gradient_surface(W, H, background_gradient)
+        screen.blit(gradient_bg, (0, 0))
         draw_text("Управление", font_large, (255, 255, 255), screen, W // 2, H // 4 - 80)
         controls = [
             "Передвижение: A / ←, D / →",
@@ -3161,7 +3206,8 @@ def main_menu():
                 selected_option = (selected_option - 1) % len(options)
                 last_move_time_up = now
 
-        screen.fill(background_image)
+        gradient_bg = create_gradient_surface(W, H, background_gradient)
+        screen.blit(gradient_bg, (0, 0))
         draw_text("The Lost Wonder", font_large, (255, 255, 255), screen, W // 2, H // 4)
 
         for j, opt in enumerate(options):
@@ -3345,7 +3391,8 @@ def skin_menu():
                 selected_skin_index = (selected_skin_index - 1) % len(skins)
                 last_move_time_up_skins = now
 
-        screen.fill(background_image)
+        gradient_bg = create_gradient_surface(W, H, background_gradient)
+        screen.blit(gradient_bg, (0, 0))
         draw_text("Выбор скина", font_large, (255, 255, 255), screen, W // 2, H // 6 - 40)
 
         # Показываем текущую сложность
@@ -3426,7 +3473,7 @@ def skin_menu():
                 else:
                     status = "Открыт"
                     status_color = (0, 255, 0)
-            elif skin_0["name"] == "Искатель секретов":
+            elif skin_0["name"] == "Золотой Фредди":
                 # Проверяем конкретно для текущей сложности
                 if check_all_secrets_found(current_difficulty):
                     status = "Открыт"
@@ -3473,7 +3520,8 @@ def skin_menu():
 
 
 def settings():
-    global music_on, sound_on, current_difficulty, dark_mode, background_image, pending_mode, player_points_easy, player_points_medium, player_points_hard, current_skin_index
+    global music_on, sound_on, current_difficulty, dark_mode, background_gradient, \
+        pending_mode, player_points_easy, player_points_medium, player_points_hard, current_skin_index
 
     load_upgrades()
     last_move_time_settings_up = 0
@@ -3518,7 +3566,7 @@ def settings():
                         toggle_sound()
                     elif selected_idx == 3:
                         pending_mode = not pending_mode
-                        background_image = (42, 98, 202) if pending_mode else (92, 148, 252)
+                        background_gradient = menu_dark_gradient if pending_mode else menu_light_gradient
                     elif selected_idx == 4:  # Сброс прогресса
                         cursor = saving.cursor()
                         table_name = ['game_progress_easy', 'game_progress_medium', 'game_progress_hard'][
@@ -3621,13 +3669,13 @@ def settings():
                         save_skin()
                         if dark_mode != pending_mode:
                             dark_mode = pending_mode
-                        background_image = (42, 98, 202) if dark_mode else (92, 148, 252)
+                            background_gradient = menu_dark_gradient if pending_mode else menu_light_gradient
                         show_message("Настройки сохранены!")
                     elif selected_idx == 6:
                         # Отмена - восстанавливаем исходные настройки
                         temp_difficulty = current_difficulty  # Восстанавливаем исходную сложность
                         pending_mode = dark_mode  # Восстанавливаем исходный режим
-                        background_image = (42, 98, 202) if dark_mode else (92, 148, 252)
+                        background_gradient = menu_dark_gradient if pending_mode else menu_light_gradient
                     elif selected_idx == 7:
                         management_menu()
 
@@ -3640,7 +3688,8 @@ def settings():
                 selected_idx = (selected_idx - 1) % len(options_settings)
                 last_move_time_settings_up = now
 
-        screen.fill(background_image)
+        gradient_bg = create_gradient_surface(W, H, background_gradient)
+        screen.blit(gradient_bg, (0, 0))
         draw_text("Настройки", font_large, (255, 255, 255), screen, W // 2, H // 6)
 
         for idx, opt in enumerate(options_settings):
@@ -3752,7 +3801,8 @@ def upgrade():
                 selected_idx = (selected_idx - 1) % len(options)
                 last_move_time_up = now
 
-        screen.fill(background_image)
+        gradient_bg = create_gradient_surface(W, H, background_gradient)
+        screen.blit(gradient_bg, (0, 0))
         draw_text("Улучшение", font_large, (255, 255, 255), screen, W // 2, H // 6)
         # Используем правильное склонение для отображения очков
         draw_text(format_points(current_player_points), font_small, (255, 255, 255), screen, W - 100, 50)
@@ -3859,7 +3909,8 @@ def secrets():
                 selected_idx = (selected_idx - 1) % TOTAL_ITEMS
                 last_move_time_up = now
 
-        screen.fill(background_image)
+        gradient_bg = create_gradient_surface(W, H, background_gradient)
+        screen.blit(gradient_bg, (0, 0))
         draw_text("Коллекция секретов", font_large, (255, 255, 255), screen, W // 2, H // 6)
 
         # Показываем общую статистику для текущей сложности
@@ -3923,9 +3974,7 @@ def secrets():
         total_found, total_secrets = get_secrets_progress(current_difficulty)
 
         if total_found >= total_secrets > 0:
-            draw_text("ВЫ НАШЛИ ВСЕ СЕКРЕТЫ НА ЭТОЙ СЛОЖНОСТИ! ПОЗДРАВЛЯЕМ!", font_medium, (255, 215, 0), screen,
-                      W // 2, H - 100)
-            draw_text("Разблокирован скин 'Искатель секретов'!", font_small, (255, 215, 0), screen, W // 2, H - 70)
+            draw_text("Разблокирован скин 'Золотой Фредди'!", font_small, (255, 215, 0), screen, W // 2, H - 70)
         else:
             draw_text(f"Найдите все секреты на этой сложности для разблокировки особого скина!", font_small,
                       (200, 200, 0), screen, W // 2, H - 70)
@@ -4041,7 +4090,8 @@ def level_menu():
                 selected_idx = (selected_idx - 1) % len(options)
                 last_move_time_up = now
 
-        screen.fill(background_image)
+        gradient_bg = create_gradient_surface(W, H, background_gradient)
+        screen.blit(gradient_bg, (0, 0))
         draw_text("Выбор уровня", font_large, (255, 255, 255), screen, W // 2, H // 6)
 
         for j, opt in enumerate(options):
