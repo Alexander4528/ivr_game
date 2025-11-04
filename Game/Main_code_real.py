@@ -731,7 +731,7 @@ class LevelManager:
                         "reward": "easter_egg",
                         "value": "sonic_reference",
                         "found": False,
-                        "message": "Пасхалка: Отсылка к Starset!",
+                        "message": "Пасхалка: Sonic dash",
                         "image": secret_star_image
                     }
                 ]
@@ -3866,13 +3866,13 @@ def secrets():
          "type": "item"},
         {"name": "Скрытая комната (Уровень 1)", "id": "points_1_4000_300", "description": "Дает +5 очков",
          "type": "points"},
-        {"name": "Сияющая звезда (Уровень 2)", "id": "secret_star_1", "description": "Требует двойного прыжка",
+        {"name": "Сияющая звезда (Уровень 2)", "id": "secret_star_1", "description": "Требует навык 'бег'",
          "type": "item"},
-        {"name": "Отсылка к Starset (Уровень 4)", "id": "sonic_reference", "description": "Требует навык 'бег'",
+        {"name": "Sonic dash (Уровень 4)", "id": "sonic_reference", "description": "Требует двойного прыжка",
          "type": "item"},
         {"name": "Сокровищница (Уровень 5)", "id": "points_5_3200_150", "description": "Дает +10 очков",
          "type": "points"},
-        {"name": "Отсылка к Марио (Уровень 5)", "id": "mario_reference",
+        {"name": "Mario time (Уровень 5)", "id": "mario_reference",
          "description": "Секрет для настоящих искателей приключений", "type": "item"},
     ]
 
