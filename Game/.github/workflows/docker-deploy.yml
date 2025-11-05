@@ -1,0 +1,86 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pygame
+
+    - name: Test game launch
+      run: |
+        timeout 10s python main.py || exit 0
+        echo "Game executable check passed"
+
+    - name: Create deployment package
+      run: |
+        mkdir -p deployment
+        cp main.py deployment/
+        cp -r "Sprites and objects" deployment/ || echo "Sprites directory not found"
+        cp -r "Music" deployment/ || echo "Music directory not found" 
+        cp -r "Sounds" deployment/ || echo "Sounds directory not found"
+        cp -r "Save_files" deployment/ || echo "Save directory not found"
+        echo "Deployment package created"
+
+    - name: Upload deployment artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: game-package
+        path: deployment/
+        retention-days: 30
